@@ -1,0 +1,242 @@
+// 索引管理器
+// 职责: 统一管理所有索引,提供索引的增删改查
+
+class IndexManager {
+    constructor() {
+        // 所有索引都用 Map<key, Set<id>> 结构
+        this.indexes = {
+            // ========== Event 索引 ==========
+
+            // 按 sport_period 分组 (例如: "fb_ht", "basket_q1")
+            bySport: new Map(),
+
+            // 按 competition_id 分组
+            byCompetition: new Map(),
+
+            // 按日期分组 (例如: "2026-01-04")
+            byDate: new Map(),
+
+            // 按 scope 分组 ("MATCH", "SEASON")
+            byScope: new Map(),
+
+            // 按 period 分组 ("FT", "HT", "Q1", etc.)
+            byPeriod: new Map(),
+
+            // 按主队名称分组
+            byHomeTeam: new Map(),
+
+            // 按客队名称分组
+            byAwayTeam: new Map(),
+
+            // ========== Market 索引 ==========
+
+            // 按 event_key 聚合活跃盘口 (event_key -> Set(market_keys))
+            activeLinesByEvent: new Map(),
+
+            // 按 market_group 分组 (例如: "ahou", "1x2")
+            byMarketGroup: new Map()
+        };
+    }
+
+    /**
+     * 添加到指定索引
+     * @param {string} indexName - 索引名称
+     * @param {string} key - 索引键
+     * @param {string} value - 要添加的值 (event_key 或 market_key)
+     */
+    addToIndex(indexName, key, value) {
+        if (!this.indexes[indexName]) {
+            console.warn(`[IndexManager] Unknown index: ${indexName}`);
+            return;
+        }
+
+        if (!this.indexes[indexName].has(key)) {
+            this.indexes[indexName].set(key, new Set());
+        }
+
+        this.indexes[indexName].get(key).add(value);
+    }
+
+    /**
+     * 从指定索引移除
+     * @param {string} indexName - 索引名称
+     * @param {string} key - 索引键
+     * @param {string} value - 要移除的值
+     */
+    removeFromIndex(indexName, key, value) {
+        if (!this.indexes[indexName]) {
+            return;
+        }
+
+        if (this.indexes[indexName].has(key)) {
+            this.indexes[indexName].get(key).delete(value);
+
+            // 如果 Set 为空,删除这个 key
+            if (this.indexes[indexName].get(key).size === 0) {
+                this.indexes[indexName].delete(key);
+            }
+        }
+    }
+
+    /**
+     * 从指定索引获取值集合
+     * @param {string} indexName - 索引名称
+     * @param {string} key - 索引键
+     * @returns {Set} 值集合
+     */
+    getFromIndex(indexName, key) {
+        if (!this.indexes[indexName]) {
+            return new Set();
+        }
+        return this.indexes[indexName].get(key) || new Set();
+    }
+
+    /**
+     * 为 event 建立索引
+     * @param {Object} event - 事件对象
+     * @param {string} sportPeriod - sport_period 字符串 (例如: "fb_ht")
+     */
+    indexEvent(event, sportPeriod) {
+        const eventKey = event.event_key;
+
+        // 索引1: bySport (使用完整的 sport_period)
+        if (sportPeriod) {
+            this.addToIndex('bySport', sportPeriod, eventKey);
+        }
+
+        // 索引2: byCompetition
+        if (event.competition_id) {
+            this.addToIndex('byCompetition', event.competition_id, eventKey);
+        }
+
+        // 索引3: byDate
+        if (event.date) {
+            this.addToIndex('byDate', event.date, eventKey);
+        }
+
+        // 索引4: byScope
+        if (event.scope) {
+            this.addToIndex('byScope', event.scope, eventKey);
+        }
+
+        // 索引5: byPeriod
+        if (event.period) {
+            this.addToIndex('byPeriod', event.period, eventKey);
+        }
+
+        // 索引6: byHomeTeam
+        if (event.home) {
+            this.addToIndex('byHomeTeam', event.home, eventKey);
+        }
+
+        // 索引7: byAwayTeam
+        if (event.away) {
+            this.addToIndex('byAwayTeam', event.away, eventKey);
+        }
+    }
+
+    /**
+     * 为 market 建立索引
+     * @param {Object} market - 市场对象
+     */
+    indexMarket(market) {
+        const marketKey = market.market_key;
+        const eventKey = market.event_key;
+        const status = market.status;
+
+        // 索引1: activeLinesByEvent (只索引活跃的盘口)
+        if (status === 'open') {
+            if (!this.indexes.activeLinesByEvent.has(eventKey)) {
+                this.indexes.activeLinesByEvent.set(eventKey, new Set());
+            }
+            this.indexes.activeLinesByEvent.get(eventKey).add(marketKey);
+        } else {
+            // 如果盘口关闭,从 active 索引移除
+            if (this.indexes.activeLinesByEvent.has(eventKey)) {
+                this.indexes.activeLinesByEvent.get(eventKey).delete(marketKey);
+            }
+        }
+
+        // 索引2: byMarketGroup
+        if (market.market_group) {
+            this.addToIndex('byMarketGroup', market.market_group, marketKey);
+        }
+    }
+
+    /**
+     * 删除 event 的所有索引
+     * @param {Object} event - 事件对象
+     * @param {string} sportPeriod - sport_period 字符串
+     */
+    removeEventIndexes(event, sportPeriod) {
+        const eventKey = event.event_key;
+
+        if (sportPeriod) {
+            this.removeFromIndex('bySport', sportPeriod, eventKey);
+        }
+        if (event.competition_id) {
+            this.removeFromIndex('byCompetition', event.competition_id, eventKey);
+        }
+        if (event.date) {
+            this.removeFromIndex('byDate', event.date, eventKey);
+        }
+        if (event.scope) {
+            this.removeFromIndex('byScope', event.scope, eventKey);
+        }
+        if (event.period) {
+            this.removeFromIndex('byPeriod', event.period, eventKey);
+        }
+        if (event.home) {
+            this.removeFromIndex('byHomeTeam', event.home, eventKey);
+        }
+        if (event.away) {
+            this.removeFromIndex('byAwayTeam', event.away, eventKey);
+        }
+    }
+
+    /**
+     * 删除 market 的所有索引
+     * @param {Object} market - 市场对象
+     */
+    removeMarketIndexes(market) {
+        const marketKey = market.market_key;
+        const eventKey = market.event_key;
+
+        if (this.indexes.activeLinesByEvent.has(eventKey)) {
+            this.indexes.activeLinesByEvent.get(eventKey).delete(marketKey);
+        }
+
+        if (market.market_group) {
+            this.removeFromIndex('byMarketGroup', market.market_group, marketKey);
+        }
+    }
+
+    /**
+     * 获取索引统计信息
+     * @param {string} indexName - 索引名称
+     * @returns {Object} 统计信息 {key: count}
+     */
+    getIndexStats(indexName) {
+        const stats = {};
+        if (this.indexes[indexName]) {
+            for (const [key, set] of this.indexes[indexName]) {
+                stats[key] = set.size;
+            }
+        }
+        return stats;
+    }
+
+    /**
+     * 清空所有索引
+     */
+    clearAll() {
+        for (const indexMap of Object.values(this.indexes)) {
+            indexMap.clear();
+        }
+    }
+}
+
+// 全局单例
+if (typeof window !== 'undefined') {
+    window.__indexManager = new IndexManager();
+}

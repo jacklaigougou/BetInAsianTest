@@ -54,7 +54,7 @@ def load_js_file(file_name: str, platform_name: str = 'betinasian') -> str:
 
 async def inject_websocket_hook(page: Any, handler_name: str = "BetInAsian") -> bool:
     """
-    注入 WebSocket Hook 到页面
+    注入 WebSocket Hook 和数据注册器到页面
 
     Args:
         page: Playwright Page 对象
@@ -64,59 +64,126 @@ async def inject_websocket_hook(page: Any, handler_name: str = "BetInAsian") -> 
         bool: 注入成功返回 True,失败返回 False
     """
     try:
-        print(f"[{handler_name}] 🔧 开始注入 WebSocket Hook...")
+        print(f"[{handler_name}] 🔧 开始注入 WebSocket Hook 和数据注册器...")
 
-        # 1. 加载 hook 脚本
+        # ========== 第1步: 加载并注入 WebSocket Hook ==========
+        print(f"[{handler_name}] 📦 加载 WebSocket Hook...")
         hook_code = load_js_file(
             file_name='_0websocket_hook.js',
             platform_name='betinasian'
         )
 
         if not hook_code:
-            print(f"[{handler_name}] ❌ [BetInAsian] 加载 _0websocket_hook.js 失败")
+            print(f"[{handler_name}] ❌ 加载 _0websocket_hook.js 失败")
             return False
 
-        # 2. 使用 add_init_script 在页面加载前注入 hook (关键!)
+        # 使用 add_init_script 在页面加载前注入
         try:
             await page.add_init_script(hook_code)
-            print(f"[{handler_name}] ✅ [BetInAsian] hook 脚本已添加到页面初始化脚本")
+            print(f"[{handler_name}] ✅ Hook 脚本已添加到页面初始化脚本")
         except Exception as e:
-            print(f"[{handler_name}] ❌ [BetInAsian] 添加 init_script 失败: {e}")
+            print(f"[{handler_name}] ❌ 添加 init_script 失败: {e}")
             return False
 
-        # 3. 刷新页面,使 hook 在 WebSocket 创建之前生效
-        print(f"[{handler_name}] 🔄 [BetInAsian] 刷新页面以激活 hook...")
+        # 刷新页面,使 hook 生效
+        print(f"[{handler_name}] 🔄 刷新页面以激活 Hook...")
         try:
-            # 使用更宽松的等待策略,避免 networkidle 超时
             await page.reload(wait_until='domcontentloaded', timeout=15000)
-            print(f"[{handler_name}] ✅ [BetInAsian] 页面刷新完成")
+            print(f"[{handler_name}] ✅ 页面刷新完成")
         except Exception as e:
-            print(f"[{handler_name}] ⚠️ [BetInAsian] 页面刷新超时,但可能已加载: {e}")
+            print(f"[{handler_name}] ⚠️ 页面刷新超时,但可能已加载: {e}")
 
-        # 4. ⚠️ 调试: 页面刷新后立即手动执行 hook 脚本
-        # 因为 add_init_script 在 CDP 连接的浏览器中可能不生效
-        print(f"[{handler_name}] 🔧 [DEBUG] 手动执行 hook 脚本...")
+        # 手动执行 hook (兼容 CDP 浏览器)
+        print(f"[{handler_name}] 🔧 手动执行 Hook 脚本...")
         try:
             await page.evaluate(hook_code)
-            print(f"[{handler_name}] ✅ [DEBUG] hook 脚本手动执行完成")
-
-            # 5. 立即检查 hook 是否生效
-            hook_check = await page.evaluate("typeof window.getWebSocketStatus")
-            print(f"[{handler_name}] 🔍 [DEBUG] hook 检查: window.getWebSocketStatus = {hook_check}")
-
-            if hook_check != 'function':
-                print(f"[{handler_name}] ❌ [BetInAsian] Hook 未生效!")
-                return False
-
+            print(f"[{handler_name}] ✅ Hook 脚本手动执行完成")
         except Exception as e:
-            print(f"[{handler_name}] ❌ [DEBUG] 手动执行 hook 失败: {e}")
+            print(f"[{handler_name}] ❌ 手动执行 Hook 失败: {e}")
             return False
 
-        print(f"[{handler_name}] ✅ [BetInAsian] WebSocket Hook 注入成功!")
+        # ========== 第2步: 加载并注入数据注册器 ==========
+        print(f"\n[{handler_name}] 📦 开始加载数据注册器系统...")
+
+        # 定义加载顺序 (按依赖关系)
+        registor_files = [
+            # 第1层: Core 存储模块
+            ('wsDataRegistor/core/events_store.js', 'Events Store'),
+            ('wsDataRegistor/core/markets_store.js', 'Markets Store'),
+            ('wsDataRegistor/core/index_manager.js', 'Index Manager'),
+
+            # 第2层: Handler 模块
+            ('wsDataRegistor/handlers/event_handler.js', 'Event Handler'),
+            ('wsDataRegistor/handlers/offers_handler.js', 'Offers Handler'),
+            ('wsDataRegistor/handlers/api_handler.js', 'API Handler'),
+
+            # 第3层: Router 和 Query Engine
+            ('wsDataRegistor/message_router.js', 'Message Router'),
+            ('wsDataRegistor/query_engine.js', 'Query Engine'),
+
+            # 第4层: 统一入口
+            ('wsDataRegistor/index.js', 'Main Index')
+        ]
+
+        # 按顺序加载和执行
+        for file_path, name in registor_files:
+            code = load_js_file(file_name=file_path, platform_name='betinasian')
+
+            if not code:
+                print(f"[{handler_name}] ❌ 加载失败: {name}")
+                return False
+
+            try:
+                await page.evaluate(code)
+                print(f"[{handler_name}] ✅ 已加载: {name}")
+            except Exception as e:
+                print(f"[{handler_name}] ❌ 执行失败: {name}, 错误: {e}")
+                return False
+
+        # ========== 第3步: 验证所有模块 ==========
+        print(f"\n[{handler_name}] 🔍 验证所有模块...")
+
+        # 检查关键函数是否存在
+        checks = {
+            'WebSocket Hook': 'window.getWebSocketStatus',
+            'Data Registor': 'window.registerMessage',
+            'Query API': 'window.queryData',
+            'Events Store': 'window.__eventsStore',
+            'Markets Store': 'window.__marketsStore',
+            'Index Manager': 'window.__indexManager'
+        }
+
+        all_ok = True
+        for name, check_expr in checks.items():
+            try:
+                result = await page.evaluate(f"typeof {check_expr}")
+                expected = 'function' if 'register' in check_expr or 'getWebSocketStatus' in check_expr else 'object'
+
+                if result != expected:
+                    print(f"[{handler_name}] ❌ {name} 验证失败: {result}")
+                    all_ok = False
+                else:
+                    print(f"[{handler_name}] ✅ {name} 已就绪")
+            except Exception as e:
+                print(f"[{handler_name}] ❌ {name} 验证异常: {e}")
+                all_ok = False
+
+        if not all_ok:
+            print(f"\n[{handler_name}] ❌ 模块验证失败!")
+            return False
+
+        print(f"\n[{handler_name}] ✅ WebSocket Hook 和数据注册器注入成功!")
+        print(f"[{handler_name}] 💡 可用功能:")
+        print(f"  - window.registerMessage(message)")
+        print(f"  - window.queryData.bySport(sportPeriod)")
+        print(f"  - window.queryData.byCompetition(id)")
+        print(f"  - window.queryData.byTeam(teamName)")
+        print(f"  - window.queryData.stats()")
+
         return True
 
     except Exception as e:
-        logger.error(f"[{handler_name}] ❌ 注入 WebSocket Hook 失败: {e}")
+        logger.error(f"[{handler_name}] ❌ 注入失败: {e}")
         return False
 
 

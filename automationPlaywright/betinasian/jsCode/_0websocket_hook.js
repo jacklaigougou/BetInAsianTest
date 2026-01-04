@@ -43,7 +43,7 @@
                 const data = JSON.parse(event.data);
                 console.log(`[BetInAsian Hook] WebSocket message #${messageCount}:`, data);
 
-                // Store all messages for Python access
+                // Store all messages for Python access (legacy)
                 window.__wsMessages = window.__wsMessages || [];
                 window.__wsMessages.push({
                     count: messageCount,
@@ -54,6 +54,24 @@
                 // Keep only last 100 messages to prevent memory issues
                 if (window.__wsMessages.length > 100) {
                     window.__wsMessages.shift();
+                }
+
+                // ========== 新增: 注册到数据存储器 ==========
+                if (window.registerMessage) {
+                    // 处理批量消息
+                    if (Array.isArray(data)) {
+                        // 批量消息: [ [msg1], [msg2], [msg3], ... ]
+                        data.forEach(message => {
+                            if (Array.isArray(message) && message.length >= 3) {
+                                window.registerMessage(message);
+                            }
+                        });
+                    } else if (Array.isArray(data) === false && typeof data === 'object') {
+                        // 单条消息但不是数组格式,跳过
+                        console.log(`[BetInAsian Hook] Skipping non-array message`);
+                    }
+                } else {
+                    console.warn(`[BetInAsian Hook] window.registerMessage not available yet`);
                 }
 
             } catch (e) {
