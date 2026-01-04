@@ -7,6 +7,7 @@ import asyncio
 import logging
 from fingerBrowser import FingerBrowser
 from browserControler import BrowserControler
+from automationPlaywright.betinasian.jsCodeExcutors import inject_websocket_hook, check_websocket_status
 
 # 配置日志
 logging.basicConfig(
@@ -82,11 +83,34 @@ async def main():
 
                 if check_result['exists']:
                     logger.info(f"✓ 目标页面已存在: {check_result['url']}")
+                    # 获取现有页面对象
+                    target_page = check_result.get('page')
                 else:
                     # 创建新页面
                     logger.info(f"✗ 未找到目标页面，正在打开: https://black.betinasia.com/sportsbook")
-                    new_page = await controller.create_new_page("https://black.betinasia.com/sportsbook")
-                    logger.info(f"✓ 成功打开页面: {new_page.url}")
+                    create_result = await controller.create_new_page("https://black.betinasia.com/sportsbook")
+                    target_page = create_result.get('page')
+                    logger.info(f"✓ 成功打开页面: {target_page.url if target_page else 'N/A'}")
+
+                # 注入 WebSocket Hook
+                if target_page:
+                    logger.info("\n开始注入 WebSocket Hook...")
+                    hook_success = await inject_websocket_hook(target_page, handler_name="BetInAsian")
+
+                    if hook_success:
+                        logger.info("✓ WebSocket Hook 注入成功!")
+
+                        # 等待几秒让页面建立 WebSocket 连接
+                        logger.info("等待 WebSocket 连接建立...")
+                        await asyncio.sleep(3)
+
+                        # 检查 WebSocket 状态
+                        ws_status = await check_websocket_status(target_page, handler_name="BetInAsian")
+                        logger.info(f"WebSocket 连接状态: {ws_status}")
+                    else:
+                        logger.warning("⚠ WebSocket Hook 注入失败，但程序继续运行")
+                else:
+                    logger.error("✗ 未能获取页面对象，无法注入 Hook")
 
                 # 进入死循环，保持程序运行
                 logger.info("\n✓ 初始化完成，程序进入运行状态...")

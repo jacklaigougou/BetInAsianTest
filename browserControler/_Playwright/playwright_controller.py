@@ -58,7 +58,7 @@ class PlaywrightController(BrowserControllerBase):
             'url': ''
         }
 
-    async def create_new_page(self, url: str, **kwargs) -> Any:
+    async def create_new_page(self, url: str, **kwargs) -> Dict[str, Any]:
         """
         新建一个页面
 
@@ -69,33 +69,53 @@ class PlaywrightController(BrowserControllerBase):
                 - timeout: 超时时间（毫秒）
 
         Returns:
-            Playwright Page 对象
+            {
+                'success': bool,
+                'page': Page | None,
+                'url': str,
+                'message': str
+            }
         """
         logger.info(f"创建新页面: {url}")
 
-        # 获取或创建上下文
-        contexts = self.browser.contexts
-        if contexts:
-            context = contexts[0]
-            logger.debug("使用现有浏览器上下文")
-        else:
-            context = await self.browser.new_context()
-            logger.debug("创建新的浏览器上下文")
+        try:
+            # 获取或创建上下文
+            contexts = self.browser.contexts
+            if contexts:
+                context = contexts[0]
+                logger.debug("使用现有浏览器上下文")
+            else:
+                context = await self.browser.new_context()
+                logger.debug("创建新的浏览器上下文")
 
-        # 创建新页面
-        page = await context.new_page()
+            # 创建新页面
+            page = await context.new_page()
 
-        # 导航到目标 URL
-        goto_options = {}
-        if 'wait_until' in kwargs:
-            goto_options['wait_until'] = kwargs['wait_until']
-        if 'timeout' in kwargs:
-            goto_options['timeout'] = kwargs['timeout']
+            # 导航到目标 URL
+            goto_options = {}
+            if 'wait_until' in kwargs:
+                goto_options['wait_until'] = kwargs['wait_until']
+            if 'timeout' in kwargs:
+                goto_options['timeout'] = kwargs['timeout']
 
-        await page.goto(url, **goto_options)
-        logger.info(f"✓ 页面创建成功: {page.url}")
+            await page.goto(url, **goto_options)
+            logger.info(f"✓ 页面创建成功: {page.url}")
 
-        return page
+            return {
+                'success': True,
+                'page': page,
+                'url': page.url,
+                'message': '页面创建成功'
+            }
+
+        except Exception as e:
+            logger.error(f"✗ 页面创建失败: {e}")
+            return {
+                'success': False,
+                'page': None,
+                'url': '',
+                'message': f'页面创建失败: {e}'
+            }
 
     async def close_single_page(self, target_url: str) -> Dict[str, Any]:
         """
