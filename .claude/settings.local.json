@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir)",
+      "Bash(.venvScriptspython.exe -c \"import aiohttp; print(aiohttp.__version__)\")",
+      "Bash(uv run python -c \"import aiohttp; print(''aiohttp version:'', aiohttp.__version__)\")",
+      "Bash(uv run python -c \"import playwright; print(''playwright version:'', playwright.__version__)\")",
+      "Bash(uv run:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
