@@ -98,51 +98,58 @@ async def query_active_markets(
     try:
         logger.info(f"查询盘口: {event_key}")
 
-        # 先查看 Markets Store 中的所有数据
+        # 先查看 Offers Store 中的所有数据
         logger.info(f"\n{'='*60}")
-        logger.info(f"📊 Markets Store 诊断信息:")
+        logger.info(f"📊 Offers Store 诊断信息:")
         logger.info(f"{'='*60}")
 
-        # 获取 Markets Store 总数
-        total_markets = await page.evaluate('window.__marketsStore.count()')
-        logger.info(f"Markets Store 总盘口数: {total_markets}")
+        # 获取 Offers Store 总数
+        total_offers = await page.evaluate('window.__offersStore.count()')
+        logger.info(f"Offers Store 总事件数: {total_offers}")
 
-        # 获取前10个 market 的 event_key 样本
-        if total_markets > 0:
-            sample_markets = await page.evaluate('''
-                Array.from(window.getMarketsData().values()).slice(0, 10).map(m => ({
-                    event_key: m.event_key,
-                    market_group: m.market_group,
-                    market_key: m.market_key
+        # 获取前10个 offers 的样本
+        if total_offers > 0:
+            sample_offers = await page.evaluate('''
+                Array.from(window.getOffersData().values()).slice(0, 10).map(o => ({
+                    event_key: o.event_key,
+                    offer_types: Object.keys(o.raw_data)
                 }))
             ''')
-            logger.info(f"\n前10个盘口样本:")
-            for i, m in enumerate(sample_markets, 1):
-                logger.info(f"  [{i}] event_key: {m.get('event_key')}, market_group: {m.get('market_group')}")
+            logger.info(f"\n前10个 offers 样本:")
+            for i, o in enumerate(sample_offers, 1):
+                logger.info(f"  [{i}] event_key: {o.get('event_key')}, offer_types: {o.get('offer_types')}")
 
-        # 查询所有盘口
-        all_markets_js = f'window.queryData.marketsByEvent("{event_key}")'
-        all_markets = await page.evaluate(all_markets_js)
+        # 查询该 event 的 offers
+        offers_js = f'window.queryData.offers("{event_key}")'
+        offers = await page.evaluate(offers_js)
 
-        # 查询活跃盘口
-        active_markets_js = f'window.queryData.activeMarketsByEvent("{event_key}")'
-        active_markets = await page.evaluate(active_markets_js)
-        
+        logger.info(f"\n目标比赛 ({event_key}) offers:")
 
-        logger.info(f"\n目标比赛 ({event_key}) 盘口:")
-        logger.info(f"  - 所有盘口: {len(all_markets) if all_markets else 0} 个")
-        logger.info(f"  - 活跃盘口: {len(active_markets) if active_markets else 0} 个")
-        logger.info(f"{'='*60}\n")
-
-        # 优先返回活跃盘口，如果没有则返回所有盘口
-        markets = active_markets if active_markets else all_markets
-
-        if markets is None:
-            logger.warning(f"未找到盘口数据: {event_key}")
+        if not offers:
+            logger.warning(f"未找到 offers 数据: {event_key}")
+            logger.info(f"{'='*60}\n")
             return []
 
-        logger.info(f"返回 {len(markets)} 个盘口")
-        return markets
+        # 将 offers 转换为列表格式,方便 Python 处理
+        # offers 格式: {"ah": [line_id, odds_array], "ahou": [...], ...}
+        offers_list = []
+        for offer_type, offer_data in offers.items():
+            line_id, odds_array = offer_data
+            # 转换 odds_array 为字典
+            odds_dict = {side: value for side, value in odds_array}
+
+            offers_list.append({
+                'offer_type': offer_type,
+                'line_id': line_id,
+                'odds': odds_dict,
+                'event_key': event_key
+            })
+
+        logger.info(f"  - 找到 {len(offers_list)} 种 offer 类型: {list(offers.keys())}")
+        logger.info(f"{'='*60}\n")
+        logger.info(f"返回 {len(offers_list)} 个 offers")
+
+        return offers_list
 
     except Exception as e:
         logger.error(f"查询盘口失败: {e}")

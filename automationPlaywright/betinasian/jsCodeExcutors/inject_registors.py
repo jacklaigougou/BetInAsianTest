@@ -61,8 +61,9 @@ async def inject_data_registors(page: Any, handler_name: str = "BetInAsian") -> 
         js_files = [
             # 第1层: Core 存储模块
             'wsDataRegistor/core/events_store.js',
-            'wsDataRegistor/core/markets_store.js',
-            'wsDataRegistor/core/index_manager.js',
+            'wsDataRegistor/core/offers_store.js',
+            'wsDataRegistor/core/events_manager.js',
+            'wsDataRegistor/core/offers_manager.js',
 
             # 第2层: Handler 模块
             'wsDataRegistor/handlers/event_handler.js',
@@ -102,8 +103,9 @@ async def inject_data_registors(page: Any, handler_name: str = "BetInAsian") -> 
             'window.registerMessage': await page.evaluate("typeof window.registerMessage"),
             'window.queryData': await page.evaluate("typeof window.queryData"),
             'window.__eventsStore': await page.evaluate("typeof window.__eventsStore"),
-            'window.__marketsStore': await page.evaluate("typeof window.__marketsStore"),
-            'window.__indexManager': await page.evaluate("typeof window.__indexManager")
+            'window.__offersStore': await page.evaluate("typeof window.__offersStore"),
+            'window.__eventsManager': await page.evaluate("typeof window.__eventsManager"),
+            'window.__offersManager': await page.evaluate("typeof window.__offersManager")
         }
 
         all_ok = True

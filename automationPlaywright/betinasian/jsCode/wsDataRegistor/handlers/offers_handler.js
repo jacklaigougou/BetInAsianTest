@@ -1,5 +1,5 @@
 // Offers 消息处理器
-// 职责: 处理 offers_hcaps, offers_event 等盘口消息,直接覆盖更新 markets_store
+// 职责: 处理 offers 消息,原样存储到 offers_store
 
 class OffersHandler {
     constructor() {
@@ -14,12 +14,12 @@ class OffersHandler {
      * @param {string} params.type - 消息类型
      * @param {string} params.sportPeriod - sport_period
      * @param {string} params.eventKey - 事件key
-     * @param {Object} params.data - 消息数据
+     * @param {Object} params.data - 消息数据(原始格式)
      * @returns {boolean} 处理是否成功
      */
     handle({ type, sportPeriod, eventKey, data }) {
         try {
-            // 记录消息样本
+            // 1. 记录消息样本(调试用)
             this.recentMessages.push({
                 type,
                 sportPeriod,
@@ -30,62 +30,18 @@ class OffersHandler {
             if (this.recentMessages.length > this.maxSamples) {
                 this.recentMessages.shift();
             }
-            // 1. 提取市场信息
-            const marketGroup = data.market_group || data.market_type || 'unknown';
-            const lineId = data.line_id || data.line || 'main';
 
-            // 2. 构造 market 数据
-            const marketData = {
-                market_key: null,  // 由 store 自动生成
-                event_key: eventKey,
-                market_group: marketGroup,
-                line_id: lineId,
-                odds: data.odds || data.prices,
-                status: data.status || 'open',
-                handicap: data.handicap,
-                line_value: data.line_value || data.line,
-                total: data.total,
-                period: this.extractPeriod(sportPeriod, data),
-                market_type: data.market_type
-            };
+            // 2. 直接存储原始 data 到 offers_store
+            window.__offersStore.update(eventKey, data);
 
-            // 3. 直接覆盖更新 markets_store
-            const market = window.__marketsStore.update(
-                eventKey,
-                marketGroup,
-                lineId,
-                marketData
-            );
-
-            // 4. 建立索引
-            window.__indexManager.indexMarket(market);
+            // 3. 建立索引
+            window.__offersManager.indexOffers(eventKey, data);
 
             return true;
 
         } catch (error) {
             return false;
         }
-    }
-
-    /**
-     * 从 sport_period 或 data 中提取 period
-     * @param {string} sportPeriod
-     * @param {Object} data
-     * @returns {string|null}
-     */
-    extractPeriod(sportPeriod, data) {
-        // 优先从 data 中获取
-        if (data.period) {
-            return data.period.toUpperCase();
-        }
-
-        // 其次从 sport_period 推导
-        const parts = sportPeriod.split('_');
-        if (parts.length > 1) {
-            return parts[1].toUpperCase();
-        }
-
-        return null;
     }
 }
 

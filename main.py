@@ -182,8 +182,8 @@ async def main():
                 # 构造测试消息
                 test_dispatch_message = {
                     'spider_sport_type': 'basket',
-                    'spider_home': 'sloga',
-                    'spider_away': 'cacak 94'
+                    'spider_home': 'baskets bonn',
+                    'spider_away': 'bamberg'
                 }
 
                 logger.info(f"📋 测试数据:")

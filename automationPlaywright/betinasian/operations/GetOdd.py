@@ -147,38 +147,41 @@ async def GetOdd(
     event_key = match_result.get('event_key')
     logger.info(f"获取赔率: event_key={event_key}")
 
-    # 2. 查询盘口
-    markets = await query_active_markets(
+    # 2. 查询 offers
+    offers = await query_active_markets(  # 函数名保持不变,但实际返回 offers 列表
         page=self.page,
         event_key=event_key
     )
-    print('markets', markets)
-    if not markets:
+
+    if not offers:
         return {
             'success': False,
-            'message': f'未找到盘口数据: {event_key}'
+            'message': f'未找到 offers 数据: {event_key}'
         }
 
-    logger.info(f"查询到 {len(markets)} 个活跃盘口")
+    logger.info(f"查询到 {len(offers)} 种 offer 类型")
 
-    # 3. 筛选目标盘口 (示例: 返回第一个盘口的赔率)
-    # TODO: 根据 dispatch_message 中的 market_group 和 bet_type 筛选具体盘口
-    target_market = markets[0]
+    # 3. 筛选目标 offer
+    # TODO: 根据 dispatch_message 中的 offer_type 和 bet_type 筛选具体 offer
+    # 默认取第一个 offer
+    target_offer = offers[0]
 
-    # 提取赔率 (示例: 假设赔率在 odds 字段中)
+    # 提取赔率
+    # target_offer 格式: {'offer_type': 'ah', 'line_id': 20, 'odds': {'a': 1.877, 'h': 1.862}}
     odd_value = None
-    if 'odds' in target_market:
-        odds = target_market['odds']
+    if 'odds' in target_offer:
+        odds = target_offer['odds']
         # 根据 bet_type 提取对应赔率
-        bet_type = dispatch_message.get('bet_type', 'home')
+        bet_type = dispatch_message.get('bet_type', 'h')  # 默认主队
         odd_value = odds.get(bet_type)
 
     return {
         'success': True,
         'event_key': event_key,
         'odd': odd_value,
-        'market_data': target_market,
-        'total_markets': len(markets),
+        'offer_data': target_offer,
+        'total_offers': len(offers),
+        'offer_types': [o['offer_type'] for o in offers],
         'match_info': {
             'match_type': match_result.get('match_type'),
             'score': match_result.get('score'),

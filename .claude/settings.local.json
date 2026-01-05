@@ -13,7 +13,8 @@
       "Bash(git push:*)",
       "Bash(dir \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\automation\\betinasian\")",
       "Bash(dir:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(move index_manager.js events_manager.js)"
     ],
     "deny": [],
     "ask": []

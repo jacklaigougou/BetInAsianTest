@@ -53,7 +53,7 @@ class EventHandler {
             const event = window.__eventsStore.update(eventKey, eventData);
 
             // 8. 建立索引
-            window.__indexManager.indexEvent(event, sportPeriod);
+            window.__eventsManager.indexEvent(event, sportPeriod);
 
             // 9. 通知订阅管理器
             if (window.__subscriptionManager) {

@@ -102,8 +102,9 @@ async def inject_websocket_hook(
         registor_files = [
             # 第1层: Core 存储模块
             ('wsDataRegistor/core/events_store.js', 'Events Store'),
-            ('wsDataRegistor/core/markets_store.js', 'Markets Store'),
-            ('wsDataRegistor/core/index_manager.js', 'Index Manager'),
+            ('wsDataRegistor/core/offers_store.js', 'Offers Store'),
+            ('wsDataRegistor/core/events_manager.js', 'Events Manager'),
+            ('wsDataRegistor/core/offers_manager.js', 'Offers Manager'),
             ('wsDataRegistor/core/subscription_manager.js', 'Subscription Manager'),
 
             # 第2层: Handler 模块
@@ -143,8 +144,9 @@ async def inject_websocket_hook(
             'Data Registor': 'window.registerMessage',
             'Query API': 'window.queryData',
             'Events Store': 'window.__eventsStore',
-            'Markets Store': 'window.__marketsStore',
-            'Index Manager': 'window.__indexManager',
+            'Offers Store': 'window.__offersStore',
+            'Events Manager': 'window.__eventsManager',
+            'Offers Manager': 'window.__offersManager',
             'Subscription Manager': 'window.__subscriptionManager'
         }
 

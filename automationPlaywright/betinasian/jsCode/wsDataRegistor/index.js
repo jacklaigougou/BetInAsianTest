@@ -5,8 +5,9 @@
     // 验证依赖是否加载
     const dependencies = [
         '__eventsStore',
-        '__marketsStore',
-        '__indexManager',
+        '__offersStore',
+        '__eventsManager',
+        '__offersManager',
         '__subscriptionManager',
         '__eventHandler',
         '__offersHandler',
@@ -96,23 +97,19 @@
         // 自定义过滤
         filterEvents: (fn) => window.__queryEngine.filterEvents(fn),
 
-        // ===== Market 查询 =====
+        // ===== Offers 查询 =====
 
-        // 按 market_key
-        market: (marketKey) => window.__queryEngine.getMarket(marketKey),
+        // 获取某个 event 的所有 offers
+        offers: (eventKey) => window.__offersManager.getOffers(eventKey),
 
-        // 按 event 查询
-        marketsByEvent: (eventKey) => window.__queryEngine.getMarketsByEvent(eventKey),
-        activeMarketsByEvent: (eventKey) => window.__queryEngine.getActiveMarketsByEvent(eventKey),
+        // 获取某个 event 的特定 offer
+        offer: (eventKey, offerType) => window.__offersManager.getOffer(eventKey, offerType),
 
-        // 按 market_group
-        marketsByGroup: (marketGroup) => window.__queryEngine.getMarketsByGroup(marketGroup),
+        // 解析赔率为字典格式
+        parseOdds: (eventKey, offerType) => window.__offersManager.parseOdds(eventKey, offerType),
 
-        // 赔率历史
-        oddsHistory: (marketKey) => window.__queryEngine.getOddsHistory(marketKey),
-
-        // 自定义过滤
-        filterMarkets: (fn) => window.__queryEngine.filterMarkets(fn),
+        // 按 offer_type 查询所有相关 events
+        eventsByOfferType: (offerType) => window.__offersManager.getEventsByOfferType(offerType),
 
         // ===== 统计信息 =====
         stats: () => window.__queryEngine.getStats()
@@ -129,19 +126,27 @@
     };
 
     /**
-     * 获取所有 market 数据 (Map对象)
+     * 获取所有 offers 数据 (Map对象)
      * @returns {Map}
      */
-    window.getMarketsData = function() {
-        return window.__marketsStore.marketsByKey;
+    window.getOffersData = function() {
+        return window.__offersStore.offersByEvent;
     };
 
     /**
-     * 获取所有索引
+     * 获取所有 Events 索引
      * @returns {Object}
      */
-    window.getIndexes = function() {
-        return window.__indexManager.indexes;
+    window.getEventsIndexes = function() {
+        return window.__eventsManager.indexes;
+    };
+
+    /**
+     * 获取所有 Offers 索引
+     * @returns {Object}
+     */
+    window.getOffersIndexes = function() {
+        return window.__offersManager.indexes;
     };
 
     /**
@@ -159,28 +164,29 @@
      */
     window.clearAllData = function() {
         window.__eventsStore.clear();
-        window.__marketsStore.clear();
-        window.__indexManager.clearAll();
+        window.__offersStore.clear();
+        window.__eventsManager.clear();
+        window.__offersManager.clear();
         window.__messageRouter.resetStats();
         window.__apiHandler.clearAll();
         window.__subscriptionManager.clearAll();
     };
 
     /**
-     * 删除指定事件及其所有市场
+     * 删除指定事件及其所有 offers
      * @param {string} eventKey
-     * @returns {Object} {eventDeleted, marketsDeleted}
+     * @returns {Object} {eventDeleted, offersDeleted}
      */
     window.deleteEvent = function(eventKey) {
         // 删除 event
         const eventDeleted = window.__eventsStore.delete(eventKey);
 
-        // 删除相关 markets
-        const marketsDeleted = window.__marketsStore.deleteByEventKey(eventKey);
+        // 删除相关 offers
+        const offersDeleted = window.__offersStore.delete(eventKey);
 
         // TODO: 清理索引 (需要知道原始event的信息)
 
-        return { eventDeleted, marketsDeleted };
+        return { eventDeleted, offersDeleted };
     };
 
     // ========== 全局 API: 订阅管理 ==========

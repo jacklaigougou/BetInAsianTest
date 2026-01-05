@@ -1,7 +1,7 @@
-// 索引管理器
-// 职责: 统一管理所有索引,提供索引的增删改查
+// Events 索引管理器
+// 职责: 管理 Events 的索引
 
-class IndexManager {
+class EventsManager {
     constructor() {
         // 所有索引都用 Map<key, Set<id>> 结构
         this.indexes = {
@@ -40,15 +40,7 @@ class IndexManager {
             bySportAndHome: new Map(),
 
             // 组合索引: sport + awayTeam (例如: "basket|Lakers")
-            bySportAndAway: new Map(),
-
-            // ========== Market 索引 ==========
-
-            // 按 event_key 聚合活跃盘口 (event_key -> Set(market_keys))
-            activeLinesByEvent: new Map(),
-
-            // 按 market_group 分组 (例如: "ahou", "1x2")
-            byMarketGroup: new Map()
+            bySportAndAway: new Map()
         };
     }
 
@@ -175,34 +167,6 @@ class IndexManager {
     }
 
     /**
-     * 为 market 建立索引
-     * @param {Object} market - 市场对象
-     */
-    indexMarket(market) {
-        const marketKey = market.market_key;
-        const eventKey = market.event_key;
-        const status = market.status;
-
-        // 索引1: activeLinesByEvent (只索引活跃的盘口)
-        if (status === 'open') {
-            if (!this.indexes.activeLinesByEvent.has(eventKey)) {
-                this.indexes.activeLinesByEvent.set(eventKey, new Set());
-            }
-            this.indexes.activeLinesByEvent.get(eventKey).add(marketKey);
-        } else {
-            // 如果盘口关闭,从 active 索引移除
-            if (this.indexes.activeLinesByEvent.has(eventKey)) {
-                this.indexes.activeLinesByEvent.get(eventKey).delete(marketKey);
-            }
-        }
-
-        // 索引2: byMarketGroup
-        if (market.market_group) {
-            this.addToIndex('byMarketGroup', market.market_group, marketKey);
-        }
-    }
-
-    /**
      * 删除 event 的所有索引
      * @param {Object} event - 事件对象
      * @param {string} sportPeriod - sport_period 字符串
@@ -298,5 +262,5 @@ class IndexManager {
 
 // 全局单例
 if (typeof window !== 'undefined') {
-    window.__indexManager = new IndexManager();
+    window.__eventsManager = new EventsManager();
 }

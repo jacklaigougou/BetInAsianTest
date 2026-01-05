@@ -19,7 +19,7 @@ class QueryEngine {
      * @returns {Array} 事件数组
      */
     getEventsBySport(sportPeriod) {
-        const eventKeys = window.__indexManager.getFromIndex('bySport', sportPeriod);
+        const eventKeys = window.__eventsManager.getFromIndex('bySport', sportPeriod);
         return this._resolveEvents(eventKeys);
     }
 
@@ -29,7 +29,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByCompetition(competitionId) {
-        const eventKeys = window.__indexManager.getFromIndex('byCompetition', competitionId);
+        const eventKeys = window.__eventsManager.getFromIndex('byCompetition', competitionId);
         return this._resolveEvents(eventKeys);
     }
 
@@ -39,7 +39,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByDate(date) {
-        const eventKeys = window.__indexManager.getFromIndex('byDate', date);
+        const eventKeys = window.__eventsManager.getFromIndex('byDate', date);
         return this._resolveEvents(eventKeys);
     }
 
@@ -49,7 +49,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByScope(scope) {
-        const eventKeys = window.__indexManager.getFromIndex('byScope', scope);
+        const eventKeys = window.__eventsManager.getFromIndex('byScope', scope);
         return this._resolveEvents(eventKeys);
     }
 
@@ -59,7 +59,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByPeriod(period) {
-        const eventKeys = window.__indexManager.getFromIndex('byPeriod', period);
+        const eventKeys = window.__eventsManager.getFromIndex('byPeriod', period);
         return this._resolveEvents(eventKeys);
     }
 
@@ -69,7 +69,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByHomeTeam(teamName) {
-        const eventKeys = window.__indexManager.getFromIndex('byHomeTeam', teamName);
+        const eventKeys = window.__eventsManager.getFromIndex('byHomeTeam', teamName);
         return this._resolveEvents(eventKeys);
     }
 
@@ -79,7 +79,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByAwayTeam(teamName) {
-        const eventKeys = window.__indexManager.getFromIndex('byAwayTeam', teamName);
+        const eventKeys = window.__eventsManager.getFromIndex('byAwayTeam', teamName);
         return this._resolveEvents(eventKeys);
     }
 
@@ -89,8 +89,8 @@ class QueryEngine {
      * @returns {Array}
      */
     getEventsByTeam(teamName) {
-        const homeKeys = window.__indexManager.getFromIndex('byHomeTeam', teamName);
-        const awayKeys = window.__indexManager.getFromIndex('byAwayTeam', teamName);
+        const homeKeys = window.__eventsManager.getFromIndex('byHomeTeam', teamName);
+        const awayKeys = window.__eventsManager.getFromIndex('byAwayTeam', teamName);
 
         // 合并去重
         const allKeys = new Set([...homeKeys, ...awayKeys]);
@@ -104,7 +104,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getInRunningEvents() {
-        const eventKeys = window.__indexManager.getFromIndex('byInRunning', 'true');
+        const eventKeys = window.__eventsManager.getFromIndex('byInRunning', 'true');
         return this._resolveEvents(eventKeys);
     }
 
@@ -113,7 +113,7 @@ class QueryEngine {
      * @returns {Array}
      */
     getNotInRunningEvents() {
-        const eventKeys = window.__indexManager.getFromIndex('byInRunning', 'false');
+        const eventKeys = window.__eventsManager.getFromIndex('byInRunning', 'false');
         return this._resolveEvents(eventKeys);
     }
 
@@ -126,7 +126,7 @@ class QueryEngine {
      */
     getInRunningSportEvents(sport) {
         const key = `${sport}|true`;
-        const eventKeys = window.__indexManager.getFromIndex('bySportAndInRunning', key);
+        const eventKeys = window.__eventsManager.getFromIndex('bySportAndInRunning', key);
         return this._resolveEvents(eventKeys);
     }
 
@@ -137,7 +137,7 @@ class QueryEngine {
      */
     getNotInRunningSportEvents(sport) {
         const key = `${sport}|false`;
-        const eventKeys = window.__indexManager.getFromIndex('bySportAndInRunning', key);
+        const eventKeys = window.__eventsManager.getFromIndex('bySportAndInRunning', key);
         return this._resolveEvents(eventKeys);
     }
 
@@ -149,7 +149,7 @@ class QueryEngine {
      */
     getEventsBySportAndHome(sport, homeTeam) {
         const key = `${sport}|${homeTeam}`;
-        const eventKeys = window.__indexManager.getFromIndex('bySportAndHome', key);
+        const eventKeys = window.__eventsManager.getFromIndex('bySportAndHome', key);
         return this._resolveEvents(eventKeys);
     }
 
@@ -161,58 +161,8 @@ class QueryEngine {
      */
     getEventsBySportAndAway(sport, awayTeam) {
         const key = `${sport}|${awayTeam}`;
-        const eventKeys = window.__indexManager.getFromIndex('bySportAndAway', key);
+        const eventKeys = window.__eventsManager.getFromIndex('bySportAndAway', key);
         return this._resolveEvents(eventKeys);
-    }
-
-    // ========== Market 查询 ==========
-
-    /**
-     * 通过 market_key 获取市场
-     * @param {string} marketKey
-     * @returns {Object|undefined}
-     */
-    getMarket(marketKey) {
-        return window.__marketsStore.get(marketKey);
-    }
-
-    /**
-     * 获取指定事件的所有市场
-     * @param {string} eventKey
-     * @returns {Array}
-     */
-    getMarketsByEvent(eventKey) {
-        return window.__marketsStore.getByEventKey(eventKey);
-    }
-
-    /**
-     * 获取指定事件的活跃市场
-     * @param {string} eventKey
-     * @returns {Array}
-     */
-    getActiveMarketsByEvent(eventKey) {
-        const marketKeys = window.__indexManager.getFromIndex('activeLinesByEvent', eventKey);
-        return this._resolveMarkets(marketKeys);
-    }
-
-    /**
-     * 按 market_group 查询市场
-     * @param {string} marketGroup - 例如: "ahou", "1x2"
-     * @returns {Array}
-     */
-    getMarketsByGroup(marketGroup) {
-        const marketKeys = window.__indexManager.getFromIndex('byMarketGroup', marketGroup);
-        return this._resolveMarkets(marketKeys);
-    }
-
-    /**
-     * 获取指定市场的赔率历史
-     * @param {string} marketKey
-     * @returns {Array}
-     */
-    getOddsHistory(marketKey) {
-        const market = window.__marketsStore.get(marketKey);
-        return market ? market.oddsHistory : [];
     }
 
     // ========== 组合查询 ==========
@@ -227,15 +177,15 @@ class QueryEngine {
 
         // 选择最小的索引作为起点
         if (conditions.sportPeriod) {
-            candidateKeys = window.__indexManager.getFromIndex('bySport', conditions.sportPeriod);
+            candidateKeys = window.__eventsManager.getFromIndex('bySport', conditions.sportPeriod);
         } else if (conditions.date) {
-            candidateKeys = window.__indexManager.getFromIndex('byDate', conditions.date);
+            candidateKeys = window.__eventsManager.getFromIndex('byDate', conditions.date);
         } else if (conditions.competition_id) {
-            candidateKeys = window.__indexManager.getFromIndex('byCompetition', conditions.competition_id);
+            candidateKeys = window.__eventsManager.getFromIndex('byCompetition', conditions.competition_id);
         } else if (conditions.home) {
-            candidateKeys = window.__indexManager.getFromIndex('byHomeTeam', conditions.home);
+            candidateKeys = window.__eventsManager.getFromIndex('byHomeTeam', conditions.home);
         } else if (conditions.scope) {
-            candidateKeys = window.__indexManager.getFromIndex('byScope', conditions.scope);
+            candidateKeys = window.__eventsManager.getFromIndex('byScope', conditions.scope);
         } else {
             // 全表扫描
             return window.__eventsStore.getAll().filter(event => this._matchConditions(event, conditions));
@@ -254,15 +204,6 @@ class QueryEngine {
         return window.__eventsStore.getAll().filter(filterFn);
     }
 
-    /**
-     * 自定义过滤市场
-     * @param {Function} filterFn - 过滤函数
-     * @returns {Array}
-     */
-    filterMarkets(filterFn) {
-        return Array.from(window.__marketsStore.marketsByKey.values()).filter(filterFn);
-    }
-
     // ========== 统计信息 ==========
 
     /**
@@ -271,27 +212,26 @@ class QueryEngine {
      */
     getStats() {
         // 获取进行状态统计
-        const inRunningStats = window.__indexManager.getIndexStats('byInRunning');
+        const inRunningStats = window.__eventsManager.getIndexStats('byInRunning');
         const inRunningCount = inRunningStats['true'] || 0;
         const notInRunningCount = inRunningStats['false'] || 0;
 
         return {
             totalEvents: window.__eventsStore.count(),
-            totalMarkets: window.__marketsStore.count(),
+            totalOffers: window.__offersStore.count(),
 
             // 进行状态统计
             inRunningCount: inRunningCount,
             notInRunningCount: notInRunningCount,
 
             // 原有统计
-            bySport: window.__indexManager.getIndexStats('bySport'),
-            byScope: window.__indexManager.getIndexStats('byScope'),
-            byPeriod: window.__indexManager.getIndexStats('byPeriod'),
-            byCompetition: window.__indexManager.getIndexStats('byCompetition'),
-            byMarketGroup: window.__indexManager.getIndexStats('byMarketGroup'),
+            bySport: window.__eventsManager.getIndexStats('bySport'),
+            byScope: window.__eventsManager.getIndexStats('byScope'),
+            byPeriod: window.__eventsManager.getIndexStats('byPeriod'),
+            byCompetition: window.__eventsManager.getIndexStats('byCompetition'),
 
             // 新增: 组合索引统计
-            bySportAndInRunning: window.__indexManager.getIndexStats('bySportAndInRunning')
+            bySportAndInRunning: window.__eventsManager.getIndexStats('bySportAndInRunning')
         };
     }
 
@@ -307,21 +247,6 @@ class QueryEngine {
             const event = window.__eventsStore.get(key);
             if (event) {
                 results.push(event);
-            }
-        }
-        return results;
-    }
-
-    /**
-     * 解析 market_keys 为 market 对象数组
-     * @private
-     */
-    _resolveMarkets(marketKeys) {
-        const results = [];
-        for (const key of marketKeys) {
-            const market = window.__marketsStore.get(key);
-            if (market) {
-                results.push(market);
             }
         }
         return results;
