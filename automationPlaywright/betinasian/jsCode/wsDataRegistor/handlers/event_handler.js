@@ -26,7 +26,10 @@ class EventHandler {
             // 4. 提取队伍信息
             const { home, away } = this.extractTeams(data, scope);
 
-            // 5. 构造 event 数据
+            // 5. 判断比赛是否正在进行 (ir_status 存在且非空)
+            const isInRunning = this.checkInRunning(data.ir_status);
+
+            // 6. 构造 event 数据
             const eventData = {
                 event_key: eventKey,
                 sport,
@@ -41,16 +44,18 @@ class EventHandler {
                 end_ts: data.end_ts,
                 event_type: data.event_type,
                 teams: data.teams,  // 赛季盘保留完整队伍列表
-                available_for_accas: data.available_for_accas
+                available_for_accas: data.available_for_accas,
+                ir_status: data.ir_status,  // 保存原始 ir_status
+                isInRunning: isInRunning    // 布尔标记: 是否正在进行
             };
 
-            // 6. 更新 events_store
+            // 7. 更新 events_store
             const event = window.__eventsStore.update(eventKey, eventData);
 
-            // 7. 建立索引
+            // 8. 建立索引
             window.__indexManager.indexEvent(event, sportPeriod);
 
-            // 8. 通知订阅管理器
+            // 9. 通知订阅管理器
             if (window.__subscriptionManager) {
                 window.__subscriptionManager.onEventReceived(event, sportPeriod);
             }
@@ -119,10 +124,29 @@ class EventHandler {
     extractTeams(data, scope) {
         if (scope === 'MATCH') {
             // 单场盘:有明确的主客队
-            return {
-                home: data.home?.name || data.home_team || null,
-                away: data.away?.name || data.away_team || null
-            };
+            // 兼容多种数据格式:
+            // 1. data.home 是字符串 (直接使用)
+            // 2. data.home 是对象 (提取 name 属性)
+            // 3. data.home_team 是字符串 (备选)
+            let home = null;
+            if (typeof data.home === 'string') {
+                home = data.home;
+            } else if (data.home && typeof data.home === 'object') {
+                home = data.home.name || null;
+            } else if (data.home_team) {
+                home = data.home_team;
+            }
+
+            let away = null;
+            if (typeof data.away === 'string') {
+                away = data.away;
+            } else if (data.away && typeof data.away === 'object') {
+                away = data.away.name || null;
+            } else if (data.away_team) {
+                away = data.away_team;
+            }
+
+            return { home, away };
         } else {
             // 赛季盘:没有主客队概念
             return {
@@ -130,6 +154,25 @@ class EventHandler {
                 away: null
             };
         }
+    }
+
+    /**
+     * 判断比赛是否正在进行
+     * @param {Object} ir_status - ir_status 字段
+     * @returns {boolean} true = 正在进行, false = 未进行
+     */
+    checkInRunning(ir_status) {
+        // ir_status 存在且非空 → IN_PLAY（正在进行）
+        if (!ir_status) {
+            return false;
+        }
+
+        // 检查是否为空对象
+        if (typeof ir_status === 'object' && Object.keys(ir_status).length === 0) {
+            return false;
+        }
+
+        return true;
     }
 }
 

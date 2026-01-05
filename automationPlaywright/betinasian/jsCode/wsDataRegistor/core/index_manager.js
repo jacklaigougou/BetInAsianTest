@@ -5,7 +5,7 @@ class IndexManager {
     constructor() {
         // 所有索引都用 Map<key, Set<id>> 结构
         this.indexes = {
-            // ========== Event 索引 ==========
+            // ========== Event 单维度索引 ==========
 
             // 按 sport_period 分组 (例如: "fb_ht", "basket_q1")
             bySport: new Map(),
@@ -27,6 +27,20 @@ class IndexManager {
 
             // 按客队名称分组
             byAwayTeam: new Map(),
+
+            // 按比赛进行状态分组 (true/false)
+            byInRunning: new Map(),
+
+            // ========== Event 组合索引 ==========
+
+            // 组合索引: sport + inRunning (例如: "basket|true")
+            bySportAndInRunning: new Map(),
+
+            // 组合索引: sport + homeTeam (例如: "basket|Arsenal")
+            bySportAndHome: new Map(),
+
+            // 组合索引: sport + awayTeam (例如: "basket|Lakers")
+            bySportAndAway: new Map(),
 
             // ========== Market 索引 ==========
 
@@ -133,6 +147,31 @@ class IndexManager {
         if (event.away) {
             this.addToIndex('byAwayTeam', event.away, eventKey);
         }
+
+        // ========== 新增索引 ==========
+
+        // 索引8: byInRunning
+        if (event.isInRunning !== undefined) {
+            this.addToIndex('byInRunning', event.isInRunning.toString(), eventKey);
+        }
+
+        // 索引9: bySportAndInRunning (sport + isInRunning)
+        if (event.sport && event.isInRunning !== undefined) {
+            const key = `${event.sport}|${event.isInRunning}`;
+            this.addToIndex('bySportAndInRunning', key, eventKey);
+        }
+
+        // 索引10: bySportAndHome (sport + homeTeam)
+        if (event.sport && event.home) {
+            const key = `${event.sport}|${event.home}`;
+            this.addToIndex('bySportAndHome', key, eventKey);
+        }
+
+        // 索引11: bySportAndAway (sport + awayTeam)
+        if (event.sport && event.away) {
+            const key = `${event.sport}|${event.away}`;
+            this.addToIndex('bySportAndAway', key, eventKey);
+        }
     }
 
     /**
@@ -191,6 +230,27 @@ class IndexManager {
         }
         if (event.away) {
             this.removeFromIndex('byAwayTeam', event.away, eventKey);
+        }
+
+        // ========== 移除新增索引 ==========
+
+        if (event.isInRunning !== undefined) {
+            this.removeFromIndex('byInRunning', event.isInRunning.toString(), eventKey);
+        }
+
+        if (event.sport && event.isInRunning !== undefined) {
+            const key = `${event.sport}|${event.isInRunning}`;
+            this.removeFromIndex('bySportAndInRunning', key, eventKey);
+        }
+
+        if (event.sport && event.home) {
+            const key = `${event.sport}|${event.home}`;
+            this.removeFromIndex('bySportAndHome', key, eventKey);
+        }
+
+        if (event.sport && event.away) {
+            const key = `${event.sport}|${event.away}`;
+            this.removeFromIndex('bySportAndAway', key, eventKey);
         }
     }
 

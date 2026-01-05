@@ -80,6 +80,16 @@
         byAwayTeam: (team) => window.__queryEngine.getEventsByAwayTeam(team),
         byTeam: (team) => window.__queryEngine.getEventsByTeam(team),
 
+        // ========== 新增: 比赛进行状态查询 ==========
+        inRunning: () => window.__queryEngine.getInRunningEvents(),
+        notInRunning: () => window.__queryEngine.getNotInRunningEvents(),
+
+        // ========== 新增: 组合查询 ==========
+        inRunningSport: (sport) => window.__queryEngine.getInRunningSportEvents(sport),
+        notInRunningSport: (sport) => window.__queryEngine.getNotInRunningSportEvents(sport),
+        bySportAndHome: (sport, home) => window.__queryEngine.getEventsBySportAndHome(sport, home),
+        bySportAndAway: (sport, away) => window.__queryEngine.getEventsBySportAndAway(sport, away),
+
         // 多条件查询
         query: (conditions) => window.__queryEngine.queryEvents(conditions),
 

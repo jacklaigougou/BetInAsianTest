@@ -97,6 +97,74 @@ class QueryEngine {
         return this._resolveEvents(allKeys);
     }
 
+    // ========== 新增: 比赛进行状态查询 ==========
+
+    /**
+     * 查询正在进行的比赛
+     * @returns {Array}
+     */
+    getInRunningEvents() {
+        const eventKeys = window.__indexManager.getFromIndex('byInRunning', 'true');
+        return this._resolveEvents(eventKeys);
+    }
+
+    /**
+     * 查询未进行的比赛
+     * @returns {Array}
+     */
+    getNotInRunningEvents() {
+        const eventKeys = window.__indexManager.getFromIndex('byInRunning', 'false');
+        return this._resolveEvents(eventKeys);
+    }
+
+    // ========== 新增: 组合查询 ==========
+
+    /**
+     * 查询指定运动的正在进行的比赛
+     * @param {string} sport - 例如: "basket", "fb"
+     * @returns {Array}
+     */
+    getInRunningSportEvents(sport) {
+        const key = `${sport}|true`;
+        const eventKeys = window.__indexManager.getFromIndex('bySportAndInRunning', key);
+        return this._resolveEvents(eventKeys);
+    }
+
+    /**
+     * 查询指定运动的未进行的比赛
+     * @param {string} sport - 例如: "basket", "fb"
+     * @returns {Array}
+     */
+    getNotInRunningSportEvents(sport) {
+        const key = `${sport}|false`;
+        const eventKeys = window.__indexManager.getFromIndex('bySportAndInRunning', key);
+        return this._resolveEvents(eventKeys);
+    }
+
+    /**
+     * 查询指定运动+主队的比赛
+     * @param {string} sport - 例如: "basket", "fb"
+     * @param {string} homeTeam - 主队名称
+     * @returns {Array}
+     */
+    getEventsBySportAndHome(sport, homeTeam) {
+        const key = `${sport}|${homeTeam}`;
+        const eventKeys = window.__indexManager.getFromIndex('bySportAndHome', key);
+        return this._resolveEvents(eventKeys);
+    }
+
+    /**
+     * 查询指定运动+客队的比赛
+     * @param {string} sport - 例如: "basket", "fb"
+     * @param {string} awayTeam - 客队名称
+     * @returns {Array}
+     */
+    getEventsBySportAndAway(sport, awayTeam) {
+        const key = `${sport}|${awayTeam}`;
+        const eventKeys = window.__indexManager.getFromIndex('bySportAndAway', key);
+        return this._resolveEvents(eventKeys);
+    }
+
     // ========== Market 查询 ==========
 
     /**
@@ -202,14 +270,28 @@ class QueryEngine {
      * @returns {Object}
      */
     getStats() {
+        // 获取进行状态统计
+        const inRunningStats = window.__indexManager.getIndexStats('byInRunning');
+        const inRunningCount = inRunningStats['true'] || 0;
+        const notInRunningCount = inRunningStats['false'] || 0;
+
         return {
             totalEvents: window.__eventsStore.count(),
             totalMarkets: window.__marketsStore.count(),
+
+            // 进行状态统计
+            inRunningCount: inRunningCount,
+            notInRunningCount: notInRunningCount,
+
+            // 原有统计
             bySport: window.__indexManager.getIndexStats('bySport'),
             byScope: window.__indexManager.getIndexStats('byScope'),
             byPeriod: window.__indexManager.getIndexStats('byPeriod'),
             byCompetition: window.__indexManager.getIndexStats('byCompetition'),
-            byMarketGroup: window.__indexManager.getIndexStats('byMarketGroup')
+            byMarketGroup: window.__indexManager.getIndexStats('byMarketGroup'),
+
+            // 新增: 组合索引统计
+            bySportAndInRunning: window.__indexManager.getIndexStats('bySportAndInRunning')
         };
     }
 
