@@ -30,6 +30,10 @@ async def get_event_key_by_name(self, dispatch_message: Dict[str, Any], **kwargs
     """
         由于 betinasian 目前正在维修,所以需要通过其他平台(如:SBO)的比赛名字映射到 betinasian 的比赛名字
         然后通过 betinasian 的比赛名字获取比赛ID
+        1.拿到dispatch_message 中的 sport_type, home_team, away_team
+        2.对  home_team, away_team 进行清晰
+        3.拿到浏览器中存储的数据,根据索引表格进行,通过sport_type ,拿到所有该运动,正在进行的所有比赛比赛
+        4.进行模糊匹配.
     """
     sport_type = dispatch_message.get('spider_sport_type')
     home_team = dispatch_message.get('spider_home')

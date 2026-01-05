@@ -2,16 +2,16 @@
 """
 BetInAsian Hook 注入器
 """
-import os
 from typing import Any, Dict
 import logging
+from utils import get_js_loader
 
 logger = logging.getLogger(__name__)
 
 
 def load_js_file(file_name: str, platform_name: str = 'betinasian') -> str:
     """
-    加载指定平台的 JS 文件
+    从缓存中加载指定平台的 JS 文件
 
     Args:
         file_name: JS文件名 (例如: '_0websocket_hook.js')
@@ -21,30 +21,14 @@ def load_js_file(file_name: str, platform_name: str = 'betinasian') -> str:
         str: JS文件内容,如果失败返回空字符串
     """
     try:
-        # 获取当前文件的目录
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        js_loader = get_js_loader()
+        content = js_loader.get_js_content(platform_name, file_name)
 
-        # 构建 jsCode 目录路径
-        js_code_dir = os.path.join(current_dir, '..', 'jsCode')
-
-        # 构建完整的文件路径
-        file_path = os.path.join(js_code_dir, file_name)
-
-        # 规范化路径
-        file_path = os.path.normpath(file_path)
-
-        logger.info(f"[{platform_name}] 尝试加载 JS 文件: {file_path}")
-
-        # 检查文件是否存在
-        if not os.path.exists(file_path):
-            logger.error(f"[{platform_name}] JS 文件不存在: {file_path}")
+        if content is None:
+            logger.error(f"[{platform_name}] JS 文件未找到: {file_name}")
             return ""
 
-        # 读取文件内容
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        logger.info(f"[{platform_name}] ✅ 成功加载 JS 文件: {file_name} ({len(content)} 字符)")
+        logger.info(f"[{platform_name}] ✅ 从缓存加载 JS 文件: {file_name} ({len(content)} 字符)")
         return content
 
     except Exception as e:

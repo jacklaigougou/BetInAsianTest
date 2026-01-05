@@ -3,16 +3,16 @@
 数据注册器注入器
 职责: 按依赖顺序加载所有 JS 文件,初始化数据注册器系统
 """
-import os
 from typing import Any
 import logging
+from utils import get_js_loader
 
 logger = logging.getLogger(__name__)
 
 
 def load_js_file_from_path(relative_path: str, platform_name: str = 'betinasian') -> str:
     """
-    从相对路径加载 JS 文件
+    从缓存中加载 JS 文件
 
     Args:
         relative_path: 相对于 jsCode 目录的路径 (例如: 'wsDataRegistor/core/events_store.js')
@@ -22,30 +22,14 @@ def load_js_file_from_path(relative_path: str, platform_name: str = 'betinasian'
         str: JS文件内容
     """
     try:
-        # 获取当前文件的目录
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        js_loader = get_js_loader()
+        content = js_loader.get_js_content(platform_name, relative_path)
 
-        # 构建 jsCode 目录路径
-        js_code_dir = os.path.join(current_dir, '..', 'jsCode')
-
-        # 构建完整的文件路径
-        file_path = os.path.join(js_code_dir, relative_path)
-
-        # 规范化路径
-        file_path = os.path.normpath(file_path)
-
-        logger.info(f"[{platform_name}] 加载 JS 文件: {relative_path}")
-
-        # 检查文件是否存在
-        if not os.path.exists(file_path):
-            logger.error(f"[{platform_name}] JS 文件不存在: {file_path}")
+        if content is None:
+            logger.error(f"[{platform_name}] JS 文件未找到: {relative_path}")
             return ""
 
-        # 读取文件内容
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        logger.info(f"[{platform_name}] ✅ 成功加载: {relative_path}")
+        logger.info(f"[{platform_name}] ✅ 从缓存加载: {relative_path}")
         return content
 
     except Exception as e:

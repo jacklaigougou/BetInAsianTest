@@ -7,7 +7,8 @@ import asyncio
 import logging
 from fingerBrowser import FingerBrowser
 from browserControler import BrowserControler
-from automationPlaywright.betinasian.operations.prepare_work import prepare_work
+from automationPlaywright.automation import Automation
+from utils.init_js_loader import initialize_js_loader
 
 # 配置日志
 logging.basicConfig(
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 async def main():
     """主函数"""
+    # ========== 第0步: 初始化 JS 加载器 ==========
+    logger.info("🔧 初始化 JS 加载器...")
+    initialize_js_loader()
+
     # 浏览器ID
     browser_id = "k18awkl7"
 
@@ -77,10 +82,17 @@ async def main():
                 logger.info("\n初始化浏览器控制器...")
                 controller = BrowserControler(playwright_browser, tool="playwright")
 
+                # 初始化自动化操作类
+                logger.info("\n初始化自动化操作...")
+                automation = Automation(
+                    platform="betinasian",
+                    browser_controller=controller,
+                    page=None  # page 会在 prepare_work 中获取
+                )
+
                 # 执行准备工作 (检查/打开页面 + 注入 Hook + 等待订阅)
                 logger.info("\n开始执行准备工作...")
-                result = await prepare_work(
-                    controller=controller,
+                result = await automation.prepare_work(
                     target_url="https://black.betinasia.com/sportsbook/basketball?group=in+running",
                     subscribe_sports=['basket']  # 只订阅篮球
                 )
