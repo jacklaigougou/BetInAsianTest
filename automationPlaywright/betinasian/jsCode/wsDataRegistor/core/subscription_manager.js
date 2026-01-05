@@ -11,7 +11,8 @@ class SubscriptionManager {
         };
 
         // 订阅状态表
-        this.watchedHcaps = new Map();     // event_key -> true (已订阅)
+        this.watchedHcaps = new Map();     // event_key -> event对象 (当前已订阅)
+        this.lastSubscribed = new Set();   // 上一次订阅的 event_key 列表
 
         // 候选列表
         this.candidates = [];              // 待订阅的 event 列表
@@ -19,6 +20,7 @@ class SubscriptionManager {
         // 时间记录
         this.firstEventTime = null;        // 第一个符合条件的event时间
         this.subscribeTimer = null;        // 订阅定时器
+        this.periodicTimer = null;         // 周期性检查定时器
 
         // 统计信息
         this.stats = {
@@ -55,12 +57,18 @@ class SubscriptionManager {
             return;
         }
 
-        // 过滤4: 避免重复订阅
+        // 过滤4: 只订阅正在进行的比赛 (isInRunning === true)
+        if (!event.isInRunning) {
+            this.stats.filteredOut++;
+            return;
+        }
+
+        // 过滤5: 避免重复订阅
         if (this.watchedHcaps.has(event.event_key)) {
             return;
         }
 
-        // 过滤5: 避免重复添加到候选列表
+        // 过滤6: 避免重复添加到候选列表
         if (this.candidates.some(e => e.event_key === event.event_key)) {
             return;
         }
@@ -90,40 +98,147 @@ class SubscriptionManager {
     }
 
     /**
-     * 批量订阅候选列表中的事件
-     * @returns {Object} {success, failed, total}
+     * 批量订阅候选列表中的事件 (自动增量订阅,只增不减)
+     * @returns {Object} {watched, unwatched, total}
      */
     subscribeCandidates() {
-        if (this.candidates.length === 0) {
-            return { success: 0, failed: 0, total: 0 };
+        // 1. 计算需要新增订阅的事件 (只订阅新的,不退订旧的)
+        const toWatch = this.candidates.filter(event =>
+            !this.watchedHcaps.has(event.event_key)
+        );
+
+        let watchedCount = 0;
+
+        // 2. 发送 watch_hcaps (订阅新的事件)
+        if (toWatch.length > 0) {
+            const watchList = toWatch.map(event => [
+                event.competition_id,
+                event.sport,
+                event.event_key
+            ]);
+
+            const watchMessage = ["watch_hcaps", watchList];
+            const watchSent = window.sendWebSocketData(JSON.stringify(watchMessage));
+
+            if (watchSent) {
+                watchedCount = toWatch.length;
+                // 标记已订阅
+                toWatch.forEach(event => {
+                    this.watchedHcaps.set(event.event_key, event);
+                    this.lastSubscribed.add(event.event_key);
+                    this.stats.subscribed++;
+                });
+            }
         }
 
-        // 构造 watch_hcaps 请求
-        // 格式: ["watch_hcaps", [[competition_id, sport, event_key], ...]]
-        const watchList = this.candidates.map(event => [
-            event.competition_id,
-            event.sport,        // "basket" (不带period)
-            event.event_key
-        ]);
+        // 3. 清空候选列表
+        this.candidates = [];
 
-        const message = ["watch_hcaps", watchList];
+        // 4. 启动周期性检查 (每30秒检查一次比赛状态变化)
+        this.startPeriodicCheck();
 
-        // 发送请求
-        const sent = window.sendWebSocketData(JSON.stringify(message));
+        return {
+            watched: watchedCount,
+            unwatched: 0,
+            total: watchedCount
+        };
+    }
 
-        if (sent) {
-            // 标记已订阅
-            this.candidates.forEach(event => {
-                this.watchedHcaps.set(event.event_key, true);
-                this.stats.subscribed++;
-            });
+    /**
+     * 主动重新订阅指定的事件列表 (先退订所有,再订阅新的)
+     * @param {Array} events - 要订阅的事件对象数组
+     * @returns {Object} {watched, unwatched, total}
+     */
+    resubscribe(events) {
+        let watchedCount = 0;
+        let unwatchedCount = 0;
 
-            const count = this.candidates.length;
-            this.candidates = [];
+        // 1. 先退订所有当前订阅
+        if (this.watchedHcaps.size > 0) {
+            const unwatchList = Array.from(this.watchedHcaps.values()).map(event => [
+                event.competition_id,
+                event.sport,
+                event.event_key
+            ]);
 
-            return { success: count, failed: 0, total: count };
-        } else {
-            return { success: 0, failed: this.candidates.length, total: this.candidates.length };
+            const unwatchMessage = ["unwatch_hcaps", unwatchList];
+            const unwatchSent = window.sendWebSocketData(JSON.stringify(unwatchMessage));
+
+            if (unwatchSent) {
+                unwatchedCount = this.watchedHcaps.size;
+                // 清空所有订阅记录
+                this.watchedHcaps.clear();
+                this.lastSubscribed.clear();
+            }
+        }
+
+        // 2. 订阅新的事件列表
+        if (events && events.length > 0) {
+            const watchList = events.map(event => [
+                event.competition_id,
+                event.sport,
+                event.event_key
+            ]);
+
+            const watchMessage = ["watch_hcaps", watchList];
+            const watchSent = window.sendWebSocketData(JSON.stringify(watchMessage));
+
+            if (watchSent) {
+                watchedCount = events.length;
+                // 标记已订阅
+                events.forEach(event => {
+                    this.watchedHcaps.set(event.event_key, event);
+                    this.lastSubscribed.add(event.event_key);
+                    this.stats.subscribed++;
+                });
+            }
+        }
+
+        return {
+            watched: watchedCount,
+            unwatched: unwatchedCount,
+            total: watchedCount + unwatchedCount
+        };
+    }
+
+    /**
+     * 启动周期性检查 (检查比赛状态变化)
+     */
+    startPeriodicCheck() {
+        // 如果已经有定时器在运行,不重复启动
+        if (this.periodicTimer) {
+            return;
+        }
+
+        this.periodicTimer = setInterval(() => {
+            this.checkAndUpdateSubscriptions();
+        }, 30000); // 每30秒检查一次
+    }
+
+    /**
+     * 检查并更新订阅 (只检测新加入的正在进行的比赛)
+     */
+    checkAndUpdateSubscriptions() {
+        // 从 eventsStore 中重新查询正在进行的篮球比赛
+        const inRunningEvents = window.queryData.inRunningSport('basket');
+
+        // 清空候选列表
+        this.candidates = [];
+
+        // 只添加尚未订阅的新比赛到候选列表
+        inRunningEvents.forEach(event => {
+            // 检查是否是全场盘 (不含下划线)
+            if (event.period === null) {
+                // 只添加尚未订阅的事件
+                if (!this.watchedHcaps.has(event.event_key)) {
+                    this.candidates.push(event);
+                }
+            }
+        });
+
+        // 如果有新比赛,执行增量订阅
+        if (this.candidates.length > 0) {
+            this.subscribeCandidates();
         }
     }
 
@@ -141,7 +256,7 @@ class SubscriptionManager {
      * @returns {boolean}
      */
     isWatched(eventKey) {
-        return this.watchedHcaps.has(eventKey) && this.watchedHcaps.get(eventKey);
+        return this.watchedHcaps.has(eventKey);
     }
 
     /**
@@ -176,6 +291,7 @@ class SubscriptionManager {
      */
     clearAll() {
         this.watchedHcaps.clear();
+        this.lastSubscribed.clear();
         this.candidates = [];
         this.firstEventTime = null;
         if (this.subscribeTimer) {

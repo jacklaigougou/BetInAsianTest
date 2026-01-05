@@ -28,3 +28,4 @@ async def GetOdd(self, page: Any, event_id: str, bet_type: str, **kwargs) -> Dic
         }
     """
     pass
+
