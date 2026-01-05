@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 async def prepare_work(
-    controller: Any,
+    self,
     target_url: str = "https://black.betinasia.com/sportsbook/basketball?group=in+running",
     subscribe_sports: list = None,
     **kwargs
@@ -19,7 +19,6 @@ async def prepare_work(
     准备工作:检查/打开目标页面,注入 WebSocket Hook
 
     Args:
-        controller: BrowserControler 实例
         target_url: 目标页面 URL
         subscribe_sports: 要订阅的运动列表,如 ['basket', 'fb'],默认 ['basket']
         **kwargs: 额外参数
@@ -39,7 +38,7 @@ async def prepare_work(
     try:
         # ========== 第1步: 检查目标 URL 是否存在 ==========
         logger.info(f"检查目标页面是否已打开: {target_url}")
-        check_result = await controller.check_url_exists(target_url)
+        check_result = await self.browser_controller.check_url_exists(target_url)
 
         if check_result['exists']:
             logger.info(f"✓ 目标页面已存在: {check_result['url']}")
@@ -47,7 +46,7 @@ async def prepare_work(
         else:
             # 创建新页面
             logger.info(f"✗ 未找到目标页面，正在打开: {target_url}")
-            create_result = await controller.create_new_page(target_url)
+            create_result = await self.browser_controller.create_new_page(target_url)
             target_page = create_result.get('page')
 
             if target_page:

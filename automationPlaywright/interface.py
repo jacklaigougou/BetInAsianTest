@@ -19,19 +19,21 @@ class AutomationBase(ABC):
     5. SupplementaryOrder - 补充订单
     """
 
-    def __init__(self, browser_controller: Any = None, **kwargs):
+    def __init__(self, browser_controller: Any = None, page: Any = None, **kwargs):
         """
         初始化自动化操作基类
 
         Args:
             browser_controller: 浏览器控制器对象
+            page: 页面对象 (Playwright Page 或 Puppeteer Page)
             **kwargs: 其他配置参数
         """
         self.browser_controller = browser_controller
+        self.page = page
         self.config = kwargs
 
     @abstractmethod
-    async def prepare_work(self, page: Any, **kwargs) -> Dict[str, Any]:
+    async def prepare_work(self, **kwargs) -> Dict[str, Any]:
         """
         准备工作
 
@@ -41,7 +43,6 @@ class AutomationBase(ABC):
         - 初始化必要的数据
 
         Args:
-            page: 页面对象 (Playwright Page 或 Puppeteer Page)
             **kwargs: 额外参数
 
         Returns:
@@ -54,12 +55,11 @@ class AutomationBase(ABC):
         pass
 
     @abstractmethod
-    async def GetBalance(self, page: Any, **kwargs) -> Dict[str, Any]:
+    async def GetBalance(self, **kwargs) -> Dict[str, Any]:
         """
         获取账户余额
 
         Args:
-            page: 页面对象 (Playwright Page 或 Puppeteer Page)
             **kwargs: 额外参数
 
         Returns:
@@ -73,23 +73,20 @@ class AutomationBase(ABC):
         pass
 
     @abstractmethod
-    async def GetOdd(self, page: Any, event_id: str, bet_type: str, **kwargs) -> Dict[str, Any]:
+    async def GetOdd(self, dispatch_message: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """
         获取赔率
 
         Args:
-            page: 页面对象 (Playwright Page 或 Puppeteer Page)
-            event_id: 赛事ID
-            bet_type: 投注类型（如：主胜、客胜、大小球等）
+            dispatch_message: 调度消息,包含所有必要的参数
             **kwargs: 额外参数
 
         Returns:
             {
                 'success': bool,      # 是否成功
                 'odd': float,         # 赔率
-                'event_id': str,      # 赛事ID
-                'bet_type': str,      # 投注类型
                 'message': str,       # 结果消息
+                'data': Any,          # 额外数据
             }
         """
         pass
@@ -97,39 +94,28 @@ class AutomationBase(ABC):
     @abstractmethod
     async def BettingOrder(
         self,
-        page: Any,
-        event_id: str,
-        bet_type: str,
-        amount: float,
-        odd: float,
+        dispatch_message: Dict[str, Any],
         **kwargs
     ) -> Dict[str, Any]:
         """
         下注订单
 
         Args:
-            page: 页面对象 (Playwright Page 或 Puppeteer Page)
-            event_id: 赛事ID
-            bet_type: 投注类型
-            amount: 投注金额
-            odd: 赔率
+            dispatch_message: 调度消息,包含所有必要的参数
             **kwargs: 额外参数
 
         Returns:
             {
                 'success': bool,      # 是否成功
                 'order_id': str,      # 订单ID
-                'event_id': str,      # 赛事ID
-                'bet_type': str,      # 投注类型
-                'amount': float,      # 投注金额
-                'odd': float,         # 赔率
                 'message': str,       # 结果消息
+                'data': Any,          # 额外数据
             }
         """
         pass
 
     @abstractmethod
-    async def SupplementaryOrder(self, page: Any, order_id: str, **kwargs) -> Dict[str, Any]:
+    async def SupplementaryOrder(self, dispatch_message: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """
         补充订单
 
@@ -139,18 +125,14 @@ class AutomationBase(ABC):
         - 取消订单
 
         Args:
-            page: 页面对象 (Playwright Page 或 Puppeteer Page)
-            order_id: 订单ID
+            dispatch_message: 调度消息,包含所有必要的参数
             **kwargs: 额外参数
-                - action: 操作类型（add_amount, cancel, modify 等）
-                - amount: 追加金额（如果适用）
 
         Returns:
             {
                 'success': bool,      # 是否成功
-                'order_id': str,      # 订单ID
-                'action': str,        # 执行的操作
                 'message': str,       # 结果消息
+                'data': Any,          # 额外数据
             }
         """
         pass

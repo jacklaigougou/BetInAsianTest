@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def SupplementaryOrder(self, page: Any, order_id: str, **kwargs) -> Dict[str, Any]:
+async def SupplementaryOrder(self, dispatch_message: Dict[str, Any], **kwargs) -> Dict[str, Any]:
     """
     补充订单
 
@@ -18,18 +18,14 @@ async def SupplementaryOrder(self, page: Any, order_id: str, **kwargs) -> Dict[s
     - 取消订单
 
     Args:
-        page: 页面对象
-        order_id: 订单ID
+        dispatch_message: 调度消息,包含所有必要的参数
         **kwargs: 额外参数
-            - action: 操作类型(add_amount, cancel, modify 等)
-            - amount: 追加金额(如果适用)
 
     Returns:
         {
             'success': bool,
-            'order_id': str,
-            'action': str,
-            'message': str
+            'message': str,
+            'data': Any
         }
     """
     pass
