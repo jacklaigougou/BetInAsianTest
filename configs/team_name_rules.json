@@ -1,0 +1,81 @@
+{
+  "stopwords": {
+    "club_suffixes": [
+      "fc",
+      "f.c.",
+      "f.c",
+      "football club",
+      "sc",
+      "s.c.",
+      "s.c",
+      "sporting club",
+      "ac",
+      "a.c.",
+      "a.c",
+      "cf",
+      "c.f.",
+      "c.f",
+      "club de fútbol",
+      "cd",
+      "c.d.",
+      "c.d",
+      "club deportivo",
+      "ca",
+      "c.a.",
+      "c.a",
+      "club atlético",
+      "afc",
+      "fk",
+      "football klub",
+      "sk",
+      "sportski klub",
+      "ik",
+      "idrottsklubb",
+      "sv",
+      "sportverein",
+      "ks",
+      "klub sportowy",
+      "nk",
+      "nogometni klub"
+    ],
+    "basketball_suffixes": [
+      "bc",
+      "b.c.",
+      "b.c",
+      "basketball club",
+      "bb",
+      "basketball",
+      "bk",
+      "basketball klub"
+    ],
+    "organization_words": [
+      "俱乐部",
+      "club",
+      "team",
+      "组织"
+    ]
+  },
+  "synonyms": {
+    "utd": "united",
+    "st": "saint",
+    "dep": "deportivo",
+    "ath": "athletic",
+    "athl": "athletic",
+    "intl": "internacional",
+    "int": "internacional",
+    "nat": "national",
+    "natl": "national",
+    "olym": "olympic",
+    "olymp": "olympic",
+    "olympique": "olympic"
+  },
+  "preserve_words": [
+    "real",
+    "royal"
+  ],
+  "description": {
+    "stopwords": "停用词列表,这些词会被删除",
+    "synonyms": "同义词映射表,左边的缩写会被替换为右边的完整词",
+    "preserve_words": "保留词列表,这些词不会被删除或替换"
+  }
+}

@@ -2,6 +2,12 @@
 // 职责: 处理 offers_hcaps, offers_event 等盘口消息,直接覆盖更新 markets_store
 
 class OffersHandler {
+    constructor() {
+        // 保存最近的消息样本用于调试
+        this.recentMessages = [];
+        this.maxSamples = 20;
+    }
+
     /**
      * 处理 offers 消息
      * @param {Object} params
@@ -13,6 +19,17 @@ class OffersHandler {
      */
     handle({ type, sportPeriod, eventKey, data }) {
         try {
+            // 记录消息样本
+            this.recentMessages.push({
+                type,
+                sportPeriod,
+                eventKey,
+                data_keys: Object.keys(data),
+                data: JSON.parse(JSON.stringify(data))  // 深拷贝
+            });
+            if (this.recentMessages.length > this.maxSamples) {
+                this.recentMessages.shift();
+            }
             // 1. 提取市场信息
             const marketGroup = data.market_group || data.market_type || 'unknown';
             const lineId = data.line_id || data.line || 'main';

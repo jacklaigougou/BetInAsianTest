@@ -6,12 +6,6 @@ class MarketsStore {
         // 主存储: market_key -> MarketState
         // market_key 格式: "event_key|market_group|line_id"
         this.marketsByKey = new Map();
-
-        // 配置项
-        this.config = {
-            keepHistory: true,           // 是否保留赔率历史
-            maxHistoryLength: 20         // 最大历史记录数
-        };
     }
 
     /**
@@ -52,7 +46,6 @@ class MarketsStore {
                 market_group: marketGroup,
                 line_id: lineId,
                 odds: null,
-                oddsHistory: [],
                 updateCount: 0,
                 firstUpdate: Date.now(),
                 lastUpdate: Date.now()
@@ -63,7 +56,7 @@ class MarketsStore {
     }
 
     /**
-     * 更新市场数据 (直接覆盖)
+     * 更新市场数据 (智能合并策略)
      * @param {string} eventKey
      * @param {string} marketGroup
      * @param {string} lineId
@@ -73,27 +66,65 @@ class MarketsStore {
     update(eventKey, marketGroup, lineId, updates) {
         const market = this.getOrCreate(eventKey, marketGroup, lineId);
 
-        // 保存赔率历史 (可选)
-        if (this.config.keepHistory && updates.odds && market.odds) {
-            market.oddsHistory.push({
-                timestamp: market.lastUpdate,
-                odds: JSON.parse(JSON.stringify(market.odds))  // 深拷贝
-            });
+        // 获取新旧数据的有效字段(排除 null/undefined)
+        const oldKeys = this.getValidKeys(market);
+        const newKeys = this.getValidKeys(updates);
 
-            // 限制历史记录长度
-            if (market.oddsHistory.length > this.config.maxHistoryLength) {
-                market.oddsHistory.shift();
+        // 检查数据项是否一致
+        const keysMatch = this.compareKeys(oldKeys, newKeys);
+
+        if (keysMatch) {
+            // 数据项一致 → 直接替换,旧数据作废
+            Object.assign(market, updates);
+        } else {
+            // 数据项不一致 → 合并,保留所有字段
+            for (const [key, value] of Object.entries(updates)) {
+                if (value !== null && value !== undefined) {
+                    market[key] = value;
+                }
             }
         }
-
-        // 直接覆盖更新 (关键设计!)
-        Object.assign(market, updates);
 
         // 更新元数据
         market.updateCount++;
         market.lastUpdate = Date.now();
 
         return market;
+    }
+
+    /**
+     * 获取对象中的有效键(值不为 null/undefined)
+     * @param {Object} obj
+     * @returns {Set<string>}
+     */
+    getValidKeys(obj) {
+        const keys = new Set();
+        for (const [key, value] of Object.entries(obj)) {
+            // 跳过元数据字段
+            if (['market_key', 'event_key', 'market_group', 'line_id',
+                 'updateCount', 'firstUpdate', 'lastUpdate'].includes(key)) {
+                continue;
+            }
+            // 只记录有效值
+            if (value !== null && value !== undefined) {
+                keys.add(key);
+            }
+        }
+        return keys;
+    }
+
+    /**
+     * 比较两组键是否一致
+     * @param {Set<string>} keys1
+     * @param {Set<string>} keys2
+     * @returns {boolean}
+     */
+    compareKeys(keys1, keys2) {
+        if (keys1.size !== keys2.size) return false;
+        for (const key of keys1) {
+            if (!keys2.has(key)) return false;
+        }
+        return true;
     }
 
     /**

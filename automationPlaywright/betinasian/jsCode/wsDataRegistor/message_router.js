@@ -7,7 +7,7 @@ class MessageRouter {
         this.handlers = {
             'event': window.__eventHandler,
             'offers_event': window.__offersHandler,
-            'offers_hcaps': window.__offersHandler,
+            'offers_hcap': window.__offersHandler,
             'offers_odds': window.__offersHandler,
             'api_pmm': window.__apiHandler,
             'api': window.__apiHandler
@@ -37,9 +37,27 @@ class MessageRouter {
                 return false;
             }
 
-            // 2. 解析消息
+            // 2. 解析消息 (适配两种格式)
             const [messageType, identifier, data] = message;
-            const [sportPeriod, eventKey] = identifier;
+
+            let sportPeriod, eventKey, competitionId;
+
+            // 判断 identifier 格式
+            if (identifier.length === 3) {
+                // offers 类消息格式: [competition_id, sport, event_key]
+                competitionId = identifier[0];
+                const sport = identifier[1];
+                eventKey = identifier[2];
+                sportPeriod = sport;  // 使用 sport 作为 sportPeriod
+            } else if (identifier.length === 2) {
+                // event 类消息格式: [sport_period, event_key]
+                sportPeriod = identifier[0];
+                eventKey = identifier[1];
+            } else {
+                // 未知格式
+                this.stats.errorCount++;
+                return false;
+            }
 
             // 3. 统计
             if (!this.stats.byType[messageType]) {
@@ -59,7 +77,8 @@ class MessageRouter {
                 type: messageType,
                 sportPeriod,
                 eventKey,
-                data
+                data,
+                competitionId  // 传递 competition_id (仅 offers 类消息有)
             });
 
             if (success) {

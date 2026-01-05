@@ -104,6 +104,135 @@ async def main():
                 logger.info(f"✓ 准备工作完成!")
                 target_page = result['page']
 
+                # 更新 automation 的 page 对象 (需要同时更新包装类和内部实现类)
+                automation.page = target_page
+                automation._automation.page = target_page
+                logger.info(f"✓ 已更新 automation.page: {target_page}")
+
+                # ========== 先查看正在进行的篮球比赛 ==========
+                logger.info("\n" + "="*60)
+                logger.info("🏀 查看正在进行的篮球比赛")
+                logger.info("="*60)
+
+                try:
+                    basket_events = await target_page.evaluate('window.queryData.inRunningSport("basket")')
+
+                    if basket_events:
+                        logger.info(f"\n找到 {len(basket_events)} 场正在进行的篮球比赛")
+
+                        # 找到测试比赛并检查盘口
+                        test_event_key = None
+                        for event in basket_events:
+                            if 'Rilski' in event.get('home', '') or 'Balkan' in event.get('away', ''):
+                                test_event_key = event.get('event_key')
+                                logger.info(f"\n找到测试比赛:")
+                                logger.info(f"  - Event Key: {test_event_key}")
+                                logger.info(f"  - {event.get('home')} vs {event.get('away')}")
+                                break
+
+                        # 如果找到测试比赛，检查盘口数据
+                        if test_event_key:
+                            logger.info(f"\n检查盘口数据...")
+
+                            # 查询所有盘口
+                            all_markets = await target_page.evaluate(f'window.queryData.marketsByEvent("{test_event_key}")')
+                            active_markets = await target_page.evaluate(f'window.queryData.activeMarketsByEvent("{test_event_key}")')
+
+                            logger.info(f"  - 所有盘口: {len(all_markets) if all_markets else 0} 个")
+                            logger.info(f"  - 活跃盘口: {len(active_markets) if active_markets else 0} 个")
+
+                            # 检查原始数据存储
+                            markets_data = await target_page.evaluate(f'''
+                                Array.from(window.getMarketsData().values()).filter(m => m.event_key === "{test_event_key}")
+                            ''')
+                            logger.info(f"  - Markets Store 中的盘口: {len(markets_data) if markets_data else 0} 个")
+
+                            # 检查是否已订阅
+                            is_watched = await target_page.evaluate(f'window.isWatched("{test_event_key}")')
+                            logger.info(f"  - 是否已订阅: {is_watched}")
+
+                            # 如果没有盘口数据且未订阅，尝试订阅
+                            if not markets_data and not is_watched:
+                                logger.info(f"\n  ⚠️ 比赛未订阅，尝试手动订阅...")
+                                await target_page.evaluate(f'window.__subscriptionManager.watch("{test_event_key}", "basket")')
+                                await asyncio.sleep(3)
+
+                                # 重新查询
+                                markets_data = await target_page.evaluate(f'''
+                                    Array.from(window.getMarketsData().values()).filter(m => m.event_key === "{test_event_key}")
+                                ''')
+                                logger.info(f"  - 订阅后盘口数: {len(markets_data) if markets_data else 0} 个")
+
+                            if markets_data:
+                                logger.info(f"\n  前3个盘口:")
+                                for i, m in enumerate(markets_data[:3], 1):
+                                    logger.info(f"    [{i}] {m.get('market_group')} - Active: {m.get('active')} - Odds: {m.get('odds')}")
+                    else:
+                        logger.warning("⚠ 未找到正在进行的篮球比赛")
+                except Exception as e:
+                    logger.error(f"查询篮球比赛失败: {e}")
+
+                logger.info("="*60 + "\n")
+
+                # ========== 测试 GetOdd 功能 ==========
+                logger.info("\n" + "="*60)
+                logger.info("🧪 测试 GetOdd 功能")
+                logger.info("="*60)
+
+                # 构造测试消息
+                test_dispatch_message = {
+                    'spider_sport_type': 'basket',
+                    'spider_home': 'sloga',
+                    'spider_away': 'cacak 94'
+                }
+
+                logger.info(f"📋 测试数据:")
+                logger.info(f"  - 运动类型: {test_dispatch_message['spider_sport_type']}")
+                logger.info(f"  - 主队: {test_dispatch_message['spider_home']}")
+                logger.info(f"  - 客队: {test_dispatch_message['spider_away']}")
+
+                # 打印实际的 WebSocket 消息样本
+                logger.info("\n📡 检查实际收到的 WebSocket 消息...")
+                sample_messages = await automation.page.evaluate('window.__offersHandler.recentMessages.slice(-5)')
+
+                if sample_messages and len(sample_messages) > 0:
+                    logger.info(f"找到 {len(sample_messages)} 条 offers 消息")
+                    logger.info(f"\n第一条消息的数据结构:")
+                    import json
+                    logger.info(json.dumps(sample_messages[0], indent=2, ensure_ascii=False))
+                else:
+                    logger.warning("⚠️ 未找到 offers 消息")
+
+                # 调用 GetOdd
+                logger.info("\n🔍 开始获取赔率...")
+                odd_result = await automation.GetOdd(test_dispatch_message)
+
+                # 显示结果
+                logger.info("\n📊 GetOdd 结果:")
+                logger.info(f"  - 成功: {odd_result.get('success')}")
+
+                if odd_result.get('success'):
+                    logger.info(f"  - Event Key: {odd_result.get('event_key')}")
+                    logger.info(f"  - 赔率: {odd_result.get('odd')}")
+                    logger.info(f"  - 盘口总数: {odd_result.get('total_markets')}")
+                    logger.info(f"  - 匹配类型: {odd_result.get('match_info', {}).get('match_type')}")
+                    logger.info(f"  - 匹配分数: {odd_result.get('match_info', {}).get('score')}")
+
+                    # 显示完整的 event 信息
+                    event = odd_result.get('match_info', {}).get('event', {})
+                    logger.info(f"\n  - Event 详情:")
+                    logger.info(f"    · 主队: {event.get('home')}")
+                    logger.info(f"    · 客队: {event.get('away')}")
+                    logger.info(f"    · 联赛: {event.get('competition_name')}")
+                    logger.info(f"    · 运动: {event.get('sport')}")
+                    logger.info(f"    · 是否进行中: {event.get('isInRunning')}")
+                else:
+                    logger.error(f"  - 错误信息: {odd_result.get('message')}")
+
+                logger.info("\n" + "="*60)
+                logger.info("🧪 测试完成")
+                logger.info("="*60 + "\n")
+
                 # 进入死循环，保持程序运行
                 logger.info("\n✓ 初始化完成，程序进入运行状态...")
                 logger.info("按 Ctrl+C 停止程序\n")
