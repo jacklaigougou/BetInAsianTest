@@ -34,11 +34,9 @@ class ApiHandler {
                 timestamp: Date.now()
             });
 
-            console.log(`[ApiHandler] Stored ${apiType} data for event: ${eventKey}`);
             return true;
 
         } catch (error) {
-            console.error(`[ApiHandler] Error processing API message:`, error);
             return false;
         }
     }

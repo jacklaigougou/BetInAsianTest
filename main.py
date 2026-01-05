@@ -78,7 +78,7 @@ async def main():
                 controller = BrowserControler(playwright_browser, tool="playwright")
 
                 # 检查目标 URL 是否存在
-                target_url = "https://black.betinasia.com/"
+                target_url = "https://black.betinasia.com/sportsbook/basketball?group=in+running"
                 check_result = await controller.check_url_exists(target_url)
 
                 if check_result['exists']:
@@ -88,7 +88,7 @@ async def main():
                 else:
                     # 创建新页面
                     logger.info(f"✗ 未找到目标页面，正在打开: https://black.betinasia.com/sportsbook")
-                    create_result = await controller.create_new_page("https://black.betinasia.com/sportsbook")
+                    create_result = await controller.create_new_page("https://black.betinasia.com/sportsbook/basketball?group=in+running")
                     target_page = create_result.get('page')
                     logger.info(f"✓ 成功打开页面: {target_page.url if target_page else 'N/A'}")
 

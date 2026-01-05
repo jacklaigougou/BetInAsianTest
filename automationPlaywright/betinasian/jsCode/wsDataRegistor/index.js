@@ -2,13 +2,12 @@
 // 职责: 初始化所有模块,提供全局 API
 
 (function() {
-    console.log('[DataRegistor] Initializing...');
-
     // 验证依赖是否加载
     const dependencies = [
         '__eventsStore',
         '__marketsStore',
         '__indexManager',
+        '__subscriptionManager',
         '__eventHandler',
         '__offersHandler',
         '__apiHandler',
@@ -18,12 +17,9 @@
 
     for (const dep of dependencies) {
         if (!window[dep]) {
-            console.error(`[DataRegistor] Dependency not loaded: ${dep}`);
             return;
         }
     }
-
-    console.log('[DataRegistor] All dependencies loaded successfully');
 
     // ========== 全局 API: 注册消息 ==========
 
@@ -157,8 +153,7 @@
         window.__indexManager.clearAll();
         window.__messageRouter.resetStats();
         window.__apiHandler.clearAll();
-
-        console.log('[DataRegistor] All data cleared');
+        window.__subscriptionManager.clearAll();
     };
 
     /**
@@ -178,42 +173,39 @@
         return { eventDeleted, marketsDeleted };
     };
 
-    // ========== 初始化完成 ==========
+    // ========== 全局 API: 订阅管理 ==========
 
-    console.log('[DataRegistor] ✅ Initialization complete!');
-    console.log('[DataRegistor] Available functions:');
-    console.log('  ========== 数据注册 ==========');
-    console.log('  - window.registerMessage(message)');
-    console.log('  - window.registerMessages(messages)');
-    console.log('');
-    console.log('  ========== Event 查询 ==========');
-    console.log('  - window.queryData.event(eventKey)');
-    console.log('  - window.queryData.bySport(sportPeriod)');
-    console.log('  - window.queryData.byCompetition(competitionId)');
-    console.log('  - window.queryData.byDate(date)');
-    console.log('  - window.queryData.byScope(scope)');
-    console.log('  - window.queryData.byPeriod(period)');
-    console.log('  - window.queryData.byHomeTeam(team)');
-    console.log('  - window.queryData.byAwayTeam(team)');
-    console.log('  - window.queryData.byTeam(team)');
-    console.log('  - window.queryData.query(conditions)');
-    console.log('  - window.queryData.filterEvents(fn)');
-    console.log('');
-    console.log('  ========== Market 查询 ==========');
-    console.log('  - window.queryData.market(marketKey)');
-    console.log('  - window.queryData.marketsByEvent(eventKey)');
-    console.log('  - window.queryData.activeMarketsByEvent(eventKey)');
-    console.log('  - window.queryData.marketsByGroup(marketGroup)');
-    console.log('  - window.queryData.oddsHistory(marketKey)');
-    console.log('  - window.queryData.filterMarkets(fn)');
-    console.log('');
-    console.log('  ========== 统计与管理 ==========');
-    console.log('  - window.queryData.stats()');
-    console.log('  - window.getRouterStats()');
-    console.log('  - window.getEventsData()');
-    console.log('  - window.getMarketsData()');
-    console.log('  - window.getIndexes()');
-    console.log('  - window.clearAllData()');
-    console.log('  - window.deleteEvent(eventKey)');
+    /**
+     * 配置订阅策略
+     * @param {Object} config - {sports: ['basket', 'fb'], autoSubscribeDelay: 10000}
+     */
+    window.configureSubscription = function(config) {
+        if (window.__subscriptionManager) {
+            window.__subscriptionManager.updateConfig(config);
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * 获取订阅统计信息
+     */
+    window.getSubscriptionStats = function() {
+        return window.__subscriptionManager.getStats();
+    };
+
+    /**
+     * 手动触发订阅
+     */
+    window.manualSubscribe = function() {
+        return window.__subscriptionManager.subscribeCandidates();
+    };
+
+    /**
+     * 检查事件是否已订阅
+     */
+    window.isWatched = function(eventKey) {
+        return window.__subscriptionManager.isWatched(eventKey);
+    };
 
 })();

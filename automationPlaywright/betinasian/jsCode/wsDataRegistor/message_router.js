@@ -33,7 +33,6 @@ class MessageRouter {
         try {
             // 1. 验证消息格式
             if (!this.validateMessage(message)) {
-                console.warn('[Router] Invalid message format:', message);
                 this.stats.errorCount++;
                 return false;
             }
@@ -52,7 +51,6 @@ class MessageRouter {
             const handler = this.getHandler(messageType);
             if (!handler) {
                 // 未注册的消息类型 (例如 watch_*)
-                console.log(`[Router] No handler for type: ${messageType}`);
                 return false;
             }
 
@@ -73,7 +71,6 @@ class MessageRouter {
             return success;
 
         } catch (error) {
-            console.error('[Router] Error routing message:', error, message);
             this.stats.errorCount++;
             return false;
         }

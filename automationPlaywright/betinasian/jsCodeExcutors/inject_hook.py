@@ -52,17 +52,26 @@ def load_js_file(file_name: str, platform_name: str = 'betinasian') -> str:
         return ""
 
 
-async def inject_websocket_hook(page: Any, handler_name: str = "BetInAsian") -> bool:
+async def inject_websocket_hook(
+    page: Any,
+    handler_name: str = "BetInAsian",
+    subscribe_sports: list = None
+) -> bool:
     """
     注入 WebSocket Hook 和数据注册器到页面
 
     Args:
         page: Playwright Page 对象
         handler_name: 处理器名称(用于日志)
+        subscribe_sports: 要自动订阅的运动列表,如 ['basket', 'fb'],默认 ['basket']
 
     Returns:
         bool: 注入成功返回 True,失败返回 False
     """
+    # 设置默认订阅运动
+    if subscribe_sports is None:
+        subscribe_sports = ['basket']
+
     try:
         print(f"[{handler_name}] 🔧 开始注入 WebSocket Hook 和数据注册器...")
 
@@ -111,6 +120,7 @@ async def inject_websocket_hook(page: Any, handler_name: str = "BetInAsian") -> 
             ('wsDataRegistor/core/events_store.js', 'Events Store'),
             ('wsDataRegistor/core/markets_store.js', 'Markets Store'),
             ('wsDataRegistor/core/index_manager.js', 'Index Manager'),
+            ('wsDataRegistor/core/subscription_manager.js', 'Subscription Manager'),
 
             # 第2层: Handler 模块
             ('wsDataRegistor/handlers/event_handler.js', 'Event Handler'),
@@ -150,7 +160,8 @@ async def inject_websocket_hook(page: Any, handler_name: str = "BetInAsian") -> 
             'Query API': 'window.queryData',
             'Events Store': 'window.__eventsStore',
             'Markets Store': 'window.__marketsStore',
-            'Index Manager': 'window.__indexManager'
+            'Index Manager': 'window.__indexManager',
+            'Subscription Manager': 'window.__subscriptionManager'
         }
 
         all_ok = True
@@ -172,13 +183,24 @@ async def inject_websocket_hook(page: Any, handler_name: str = "BetInAsian") -> 
             print(f"\n[{handler_name}] ❌ 模块验证失败!")
             return False
 
+        # ========== 第4步: 配置订阅策略 ==========
+        print(f"\n[{handler_name}] ⚙️ 配置订阅策略...")
+        import json
+        sports_json = json.dumps(subscribe_sports)
+
+        try:
+            await page.evaluate(f"""
+                window.configureSubscription({{
+                    sports: {sports_json},
+                    autoSubscribeDelay: 10000
+                }});
+            """)
+            print(f"[{handler_name}] ✅ 订阅策略已配置: {subscribe_sports}")
+        except Exception as e:
+            print(f"[{handler_name}] ❌ 配置订阅策略失败: {e}")
+            return False
+
         print(f"\n[{handler_name}] ✅ WebSocket Hook 和数据注册器注入成功!")
-        print(f"[{handler_name}] 💡 可用功能:")
-        print(f"  - window.registerMessage(message)")
-        print(f"  - window.queryData.bySport(sportPeriod)")
-        print(f"  - window.queryData.byCompetition(id)")
-        print(f"  - window.queryData.byTeam(teamName)")
-        print(f"  - window.queryData.stats()")
 
         return True
 

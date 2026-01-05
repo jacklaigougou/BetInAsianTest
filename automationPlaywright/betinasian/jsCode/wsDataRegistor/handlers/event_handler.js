@@ -50,11 +50,14 @@ class EventHandler {
             // 7. 建立索引
             window.__indexManager.indexEvent(event, sportPeriod);
 
-            console.log(`[EventHandler] Processed event: ${eventKey}`);
+            // 8. 通知订阅管理器
+            if (window.__subscriptionManager) {
+                window.__subscriptionManager.onEventReceived(event, sportPeriod);
+            }
+
             return true;
 
         } catch (error) {
-            console.error(`[EventHandler] Error processing event:`, error);
             return false;
         }
     }

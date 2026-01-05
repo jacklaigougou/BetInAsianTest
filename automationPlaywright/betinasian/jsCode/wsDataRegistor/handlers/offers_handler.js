@@ -43,11 +43,9 @@ class OffersHandler {
             // 4. 建立索引
             window.__indexManager.indexMarket(market);
 
-            console.log(`[OffersHandler] Updated market: ${market.market_key}`);
             return true;
 
         } catch (error) {
-            console.error(`[OffersHandler] Error processing offers:`, error);
             return false;
         }
     }
