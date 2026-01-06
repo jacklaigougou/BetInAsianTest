@@ -61,9 +61,12 @@ async def inject_data_registors(page: Any, handler_name: str = "BetInAsian") -> 
         js_files = [
             # 第1层: Core 存储模块
             'wsDataRegistor/core/events_store.js',
-            'wsDataRegistor/core/offers_store.js',
+            'wsDataRegistor/core/offers_hcap_store.js',
+            'wsDataRegistor/core/offers_event_store.js',
             'wsDataRegistor/core/events_manager.js',
-            'wsDataRegistor/core/offers_manager.js',
+            'wsDataRegistor/core/offers_hcap_manager.js',
+            'wsDataRegistor/core/offers_event_manager.js',
+            'wsDataRegistor/core/watch_manager.js',
 
             # 第2层: Handler 模块
             'wsDataRegistor/handlers/event_handler.js',
@@ -103,9 +106,12 @@ async def inject_data_registors(page: Any, handler_name: str = "BetInAsian") -> 
             'window.registerMessage': await page.evaluate("typeof window.registerMessage"),
             'window.queryData': await page.evaluate("typeof window.queryData"),
             'window.__eventsStore': await page.evaluate("typeof window.__eventsStore"),
-            'window.__offersStore': await page.evaluate("typeof window.__offersStore"),
+            'window.__offersHcapStore': await page.evaluate("typeof window.__offersHcapStore"),
+            'window.__offersEventStore': await page.evaluate("typeof window.__offersEventStore"),
             'window.__eventsManager': await page.evaluate("typeof window.__eventsManager"),
-            'window.__offersManager': await page.evaluate("typeof window.__offersManager")
+            'window.__offersHcapManager': await page.evaluate("typeof window.__offersHcapManager"),
+            'window.__offersEventManager': await page.evaluate("typeof window.__offersEventManager"),
+            'window.__watchManager': await page.evaluate("typeof window.__watchManager")
         }
 
         all_ok = True

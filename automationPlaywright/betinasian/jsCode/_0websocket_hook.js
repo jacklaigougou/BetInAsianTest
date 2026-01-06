@@ -77,6 +77,11 @@
     // Preserve prototype
     window.WebSocket.prototype = OriginalWebSocket.prototype;
 
+    // Helper function: Get WebSocket instance
+    window.getWebSocketInstance = function () {
+        return window.__ws || null;
+    };
+
     // Helper function: Send data via WebSocket
     window.sendWebSocketData = function (data) {
         if (window.__ws && window.__ws.readyState === 1) {

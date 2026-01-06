@@ -31,11 +31,16 @@ class OffersHandler {
                 this.recentMessages.shift();
             }
 
-            // 2. 直接存储原始 data 到 offers_store
-            window.__offersStore.update(eventKey, data);
-
-            // 3. 建立索引
-            window.__offersManager.indexOffers(eventKey, data);
+            // 2. 根据消息类型路由到不同的存储
+            if (type === 'offers_event') {
+                // offers_event → offers_event_store
+                window.__offersEventStore.update(eventKey, data);
+                window.__offersEventManager.indexOffersEvent(eventKey, data);
+            } else {
+                // offers_hcap / offers_odds → offers_hcap_store
+                window.__offersHcapStore.update(eventKey, data);
+                window.__offersHcapManager.indexOffers(eventKey, data);
+            }
 
             return true;
 

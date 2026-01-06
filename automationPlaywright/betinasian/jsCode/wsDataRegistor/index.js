@@ -5,9 +5,12 @@
     // 验证依赖是否加载
     const dependencies = [
         '__eventsStore',
-        '__offersStore',
+        '__offersHcapStore',
+        '__offersEventStore',
         '__eventsManager',
-        '__offersManager',
+        '__offersHcapManager',
+        '__offersEventManager',
+        '__watchManager',
         '__subscriptionManager',
         '__eventHandler',
         '__offersHandler',
@@ -97,19 +100,50 @@
         // 自定义过滤
         filterEvents: (fn) => window.__queryEngine.filterEvents(fn),
 
-        // ===== Offers 查询 =====
+        // ===== Offers Hcap 查询 =====
 
-        // 获取某个 event 的所有 offers
-        offers: (eventKey) => window.__offersManager.getOffers(eventKey),
+        // 获取某个 event 的所有 offers (hcap)
+        offers: (eventKey) => window.__offersHcapManager.getOffers(eventKey),
 
-        // 获取某个 event 的特定 offer
-        offer: (eventKey, offerType) => window.__offersManager.getOffer(eventKey, offerType),
+        // 获取某个 event 的特定 offer (hcap)
+        offer: (eventKey, offerType) => window.__offersHcapManager.getOffer(eventKey, offerType),
 
-        // 解析赔率为字典格式
-        parseOdds: (eventKey, offerType) => window.__offersManager.parseOdds(eventKey, offerType),
+        // 解析赔率为字典格式 (hcap)
+        parseOdds: (eventKey, offerType) => window.__offersHcapManager.parseOdds(eventKey, offerType),
 
-        // 按 offer_type 查询所有相关 events
-        eventsByOfferType: (offerType) => window.__offersManager.getEventsByOfferType(offerType),
+        // 按 offer_type 查询所有相关 events (hcap)
+        eventsByOfferType: (offerType) => window.__offersHcapManager.getEventsByOfferType(offerType),
+
+        // ===== Offers Event 查询 =====
+
+        // 获取某个 event 的所有 offers_event
+        offersEvent: (eventKey) => window.__offersEventManager.getOffersEvent(eventKey),
+
+        // 获取某个 event 的特定 offer_type 的所有 lines
+        offerEventLines: (eventKey, offerType) => window.__offersEventManager.getOfferEventLines(eventKey, offerType),
+
+        // 获取某个 event 的特定 line
+        offerEventLine: (eventKey, offerType, lineId) => window.__offersEventManager.getOfferEventLine(eventKey, offerType, lineId),
+
+        // 解析所有 lines 为字典格式
+        parseAllOfferEventLines: (eventKey, offerType) => window.__offersEventManager.parseAllOfferEventLines(eventKey, offerType),
+
+        // 解析特定 line 为字典格式
+        parseOfferEventLine: (eventKey, offerType, lineId) => window.__offersEventManager.parseOfferEventLine(eventKey, offerType, lineId),
+
+        // ===== Watch 管理 =====
+
+        // 订阅 watch_event
+        watch: (eventKey, sport, competitionId) => window.__watchManager.watch(eventKey, sport, competitionId),
+
+        // 取消订阅
+        unwatch: (eventKey, sport, competitionId) => window.__watchManager.unwatch(eventKey, sport, competitionId),
+
+        // 检查是否已订阅
+        isWatched: (eventKey) => window.__watchManager.isWatched(eventKey),
+
+        // 获取所有已订阅事件
+        getWatchedEvents: () => window.__watchManager.getWatchedEvents(),
 
         // ===== 统计信息 =====
         stats: () => window.__queryEngine.getStats()
@@ -126,11 +160,28 @@
     };
 
     /**
-     * 获取所有 offers 数据 (Map对象)
+     * 获取所有 offers_hcap 数据 (Map对象)
+     * @returns {Map}
+     */
+    window.getOffersHcapData = function() {
+        return window.__offersHcapStore.offersByEvent;
+    };
+
+    /**
+     * 获取所有 offers_event 数据 (Map对象)
+     * @returns {Map}
+     */
+    window.getOffersEventData = function() {
+        return window.__offersEventStore.offersByEvent;
+    };
+
+    /**
+     * 获取所有 offers 数据 (兼容旧版,返回 hcap)
+     * @deprecated 请使用 getOffersHcapData 或 getOffersEventData
      * @returns {Map}
      */
     window.getOffersData = function() {
-        return window.__offersStore.offersByEvent;
+        return window.__offersHcapStore.offersByEvent;
     };
 
     /**
@@ -142,11 +193,28 @@
     };
 
     /**
-     * 获取所有 Offers 索引
+     * 获取所有 Offers Hcap 索引
+     * @returns {Object}
+     */
+    window.getOffersHcapIndexes = function() {
+        return window.__offersHcapManager.indexes;
+    };
+
+    /**
+     * 获取所有 Offers Event 索引
+     * @returns {Object}
+     */
+    window.getOffersEventIndexes = function() {
+        return window.__offersEventManager.indexes;
+    };
+
+    /**
+     * 获取所有 Offers 索引 (兼容旧版,返回 hcap)
+     * @deprecated 请使用 getOffersHcapIndexes 或 getOffersEventIndexes
      * @returns {Object}
      */
     window.getOffersIndexes = function() {
-        return window.__offersManager.indexes;
+        return window.__offersHcapManager.indexes;
     };
 
     /**
@@ -164,9 +232,12 @@
      */
     window.clearAllData = function() {
         window.__eventsStore.clear();
-        window.__offersStore.clear();
+        window.__offersHcapStore.clear();
+        window.__offersEventStore.clear();
         window.__eventsManager.clear();
-        window.__offersManager.clear();
+        window.__offersHcapManager.clear();
+        window.__offersEventManager.clear();
+        window.__watchManager.clear();
         window.__messageRouter.resetStats();
         window.__apiHandler.clearAll();
         window.__subscriptionManager.clearAll();
@@ -175,18 +246,19 @@
     /**
      * 删除指定事件及其所有 offers
      * @param {string} eventKey
-     * @returns {Object} {eventDeleted, offersDeleted}
+     * @returns {Object} {eventDeleted, offersHcapDeleted, offersEventDeleted}
      */
     window.deleteEvent = function(eventKey) {
         // 删除 event
         const eventDeleted = window.__eventsStore.delete(eventKey);
 
-        // 删除相关 offers
-        const offersDeleted = window.__offersStore.delete(eventKey);
+        // 删除相关 offers (两个存储)
+        const offersHcapDeleted = window.__offersHcapStore.delete(eventKey);
+        const offersEventDeleted = window.__offersEventStore.delete(eventKey);
 
         // TODO: 清理索引 (需要知道原始event的信息)
 
-        return { eventDeleted, offersDeleted };
+        return { eventDeleted, offersHcapDeleted, offersEventDeleted };
     };
 
     // ========== 全局 API: 订阅管理 ==========

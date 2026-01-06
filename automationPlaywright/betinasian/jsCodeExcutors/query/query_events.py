@@ -104,19 +104,33 @@ async def query_active_markets(
         logger.info(f"{'='*60}")
 
         # 获取 Offers Store 总数
-        total_offers = await page.evaluate('window.__offersStore.count()')
-        logger.info(f"Offers Store 总事件数: {total_offers}")
+        total_offers_hcap = await page.evaluate('window.__offersHcapStore.count()')
+        total_offers_event = await page.evaluate('window.__offersEventStore.count()')
+        logger.info(f"Offers Hcap Store 总事件数: {total_offers_hcap}")
+        logger.info(f"Offers Event Store 总事件数: {total_offers_event}")
 
-        # 获取前10个 offers 的样本
-        if total_offers > 0:
-            sample_offers = await page.evaluate('''
-                Array.from(window.getOffersData().values()).slice(0, 10).map(o => ({
+        # 获取前10个 offers 的样本 (hcap)
+        if total_offers_hcap > 0:
+            sample_offers_hcap = await page.evaluate('''
+                Array.from(window.getOffersHcapData().values()).slice(0, 10).map(o => ({
                     event_key: o.event_key,
                     offer_types: Object.keys(o.raw_data)
                 }))
             ''')
-            logger.info(f"\n前10个 offers 样本:")
-            for i, o in enumerate(sample_offers, 1):
+            logger.info(f"\n前10个 Offers Hcap 样本:")
+            for i, o in enumerate(sample_offers_hcap, 1):
+                logger.info(f"  [{i}] event_key: {o.get('event_key')}, offer_types: {o.get('offer_types')}")
+
+        # 获取前10个 offers_event 的样本
+        if total_offers_event > 0:
+            sample_offers_event = await page.evaluate('''
+                Array.from(window.getOffersEventData().values()).slice(0, 10).map(o => ({
+                    event_key: o.event_key,
+                    offer_types: Object.keys(o.raw_data)
+                }))
+            ''')
+            logger.info(f"\n前10个 Offers Event 样本:")
+            for i, o in enumerate(sample_offers_event, 1):
                 logger.info(f"  [{i}] event_key: {o.get('event_key')}, offer_types: {o.get('offer_types')}")
 
         # 查询该 event 的 offers

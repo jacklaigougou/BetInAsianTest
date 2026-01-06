@@ -1,7 +1,7 @@
 // Offers 索引管理器
 // 职责: 管理 Offers 的索引,提供查询接口
 
-class OffersManager {
+class OffersHcapManager {
     constructor() {
         // 索引结构
         this.indexes = {
@@ -38,7 +38,7 @@ class OffersManager {
      * @returns {Object|null} offers 数据对象,例如: {"ah": [20, [...]], "ahou": [632, [...]]}
      */
     getOffers(eventKey) {
-        const data = window.__offersStore.get(eventKey);
+        const data = window.__offersHcapStore.get(eventKey);
         return data ? data.raw_data : null;
     }
 
@@ -103,7 +103,7 @@ class OffersManager {
      */
     getStats() {
         const stats = {
-            totalEvents: window.__offersStore.count(),
+            totalEvents: window.__offersHcapStore.count(),
             byOfferType: {}
         };
 
@@ -144,5 +144,5 @@ class OffersManager {
 
 // 全局单例
 if (typeof window !== 'undefined') {
-    window.__offersManager = new OffersManager();
+    window.__offersHcapManager = new OffersHcapManager();
 }

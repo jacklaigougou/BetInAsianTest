@@ -102,9 +102,12 @@ async def inject_websocket_hook(
         registor_files = [
             # 第1层: Core 存储模块
             ('wsDataRegistor/core/events_store.js', 'Events Store'),
-            ('wsDataRegistor/core/offers_store.js', 'Offers Store'),
+            ('wsDataRegistor/core/offers_hcap_store.js', 'Offers Hcap Store'),
+            ('wsDataRegistor/core/offers_event_store.js', 'Offers Event Store'),
             ('wsDataRegistor/core/events_manager.js', 'Events Manager'),
-            ('wsDataRegistor/core/offers_manager.js', 'Offers Manager'),
+            ('wsDataRegistor/core/offers_hcap_manager.js', 'Offers Hcap Manager'),
+            ('wsDataRegistor/core/offers_event_manager.js', 'Offers Event Manager'),
+            ('wsDataRegistor/core/watch_manager.js', 'Watch Manager'),
             ('wsDataRegistor/core/subscription_manager.js', 'Subscription Manager'),
 
             # 第2层: Handler 模块
@@ -144,9 +147,12 @@ async def inject_websocket_hook(
             'Data Registor': 'window.registerMessage',
             'Query API': 'window.queryData',
             'Events Store': 'window.__eventsStore',
-            'Offers Store': 'window.__offersStore',
+            'Offers Hcap Store': 'window.__offersHcapStore',
+            'Offers Event Store': 'window.__offersEventStore',
             'Events Manager': 'window.__eventsManager',
-            'Offers Manager': 'window.__offersManager',
+            'Offers Hcap Manager': 'window.__offersHcapManager',
+            'Offers Event Manager': 'window.__offersEventManager',
+            'Watch Manager': 'window.__watchManager',
             'Subscription Manager': 'window.__subscriptionManager'
         }
 

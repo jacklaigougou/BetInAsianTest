@@ -147,7 +147,7 @@ async def GetOdd(
     event_key = match_result.get('event_key')
     logger.info(f"获取赔率: event_key={event_key}")
 
-    # 2. 查询 offers
+    # 2. 查询 offers (简单数据)
     offers = await query_active_markets(  # 函数名保持不变,但实际返回 offers 列表
         page=self.page,
         event_key=event_key
@@ -161,31 +161,57 @@ async def GetOdd(
 
     logger.info(f"查询到 {len(offers)} 种 offer 类型")
 
-    # 3. 筛选目标 offer
+    # 3. 订阅 watch_event 获取详细数据
+    try:
+        # 从 event 中提取 competition_id 和 sport
+        competition_id = event.get('competition_id')
+        sport = event.get('sport_period', '').split('_')[0] if event.get('sport_period') else 'basket'
+
+        logger.info(f"订阅 watch_event: event_key={event_key}, sport={sport}, competition_id={competition_id}")
+
+        # 检查是否已订阅
+        is_watched = await self.page.evaluate(f'''
+            window.__watchManager.isWatched("{event_key}")
+        ''')
+
+        if not is_watched:
+            # 发送 watch_event 订阅
+            watch_success = await self.page.evaluate(f'''
+                window.__watchManager.watch("{event_key}", "{sport}", {competition_id})
+            ''')
+
+            if watch_success:
+                logger.info(f"✅ watch_event 订阅成功")
+                # 等待数据返回
+                import asyncio
+                await asyncio.sleep(2)
+            else:
+                logger.warning(f"⚠️ watch_event 订阅失败")
+        else:
+            logger.info(f"✅ 事件已订阅")
+
+        # 查询 offers_event 详细数据
+        offers_event = await self.page.evaluate(f'''
+            window.queryData.offersEvent("{event_key}")
+        ''')
+
+        if offers_event:
+            logger.info(f"✅ 获取到 offers_event 详细数据,包含 {len(offers_event)} 种 offer_type")
+            # 打印 offers_event 的 offer_type 列表
+            logger.info(f"Offers Event 类型: {list(offers_event.keys())}")
+        else:
+            logger.warning(f"⚠️ 未获取到 offers_event 数据")
+
+    except Exception as e:
+        logger.error(f"❌ watch_event 处理异常: {e}")
+        # 不影响主流程,继续使用 offers_hcap 数据
+
+    # 4. 筛选目标 offer
     # TODO: 根据 dispatch_message 中的 offer_type 和 bet_type 筛选具体 offer
     # 默认取第一个 offer
     target_offer = offers[0]
 
     # 提取赔率
     # target_offer 格式: {'offer_type': 'ah', 'line_id': 20, 'odds': {'a': 1.877, 'h': 1.862}}
-    odd_value = None
-    if 'odds' in target_offer:
-        odds = target_offer['odds']
-        # 根据 bet_type 提取对应赔率
-        bet_type = dispatch_message.get('bet_type', 'h')  # 默认主队
-        odd_value = odds.get(bet_type)
-
-    return {
-        'success': True,
-        'event_key': event_key,
-        'odd': odd_value,
-        'offer_data': target_offer,
-        'total_offers': len(offers),
-        'offer_types': [o['offer_type'] for o in offers],
-        'match_info': {
-            'match_type': match_result.get('match_type'),
-            'score': match_result.get('score'),
-            'event': match_result.get('event')  # 完整的 event 对象
-        }
-    }
+    
 

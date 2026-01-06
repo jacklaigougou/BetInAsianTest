@@ -1,7 +1,7 @@
-// Offers 数据存储
-// 职责: 按 event_key 存储原始 offers 数据,支持智能更新
+// Offers Hcap 数据存储
+// 职责: 按 event_key 存储 offers_hcap/offers_odds 原始数据,支持智能更新
 
-class OffersStore {
+class OffersHcapStore {
     constructor() {
         // 按 event_key 存储原始 offers 数据
         // event_key -> { event_key, raw_data, updateCount, firstUpdate, lastUpdate }
@@ -108,5 +108,5 @@ class OffersStore {
 
 // 全局单例
 if (typeof window !== 'undefined') {
-    window.__offersStore = new OffersStore();
+    window.__offersHcapStore = new OffersHcapStore();
 }
