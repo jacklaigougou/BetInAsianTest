@@ -34,3 +34,6 @@ interface 进行调整
 
 # v1.0.10
 暂存
+
+# v1.0.11
+betburger 到 betinisian 的映射做完,竟然如此丝滑

@@ -14,7 +14,11 @@
       "Bash(dir \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\automation\\betinasian\")",
       "Bash(dir:*)",
       "Bash(python:*)",
-      "Bash(move index_manager.js events_manager.js)"
+      "Bash(move index_manager.js events_manager.js)",
+      "Bash(cat \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\automationPlaywright\\betinasian\\BetburgerToBetinisian\\basket.py\")",
+      "Bash(cat:*)",
+      "Bash(move basket.py basket/)",
+      "Bash(move soccer.py soccer/)"
     ],
     "deny": [],
     "ask": []

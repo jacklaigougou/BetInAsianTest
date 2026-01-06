@@ -190,17 +190,26 @@ async def GetOdd(
         else:
             logger.info(f"✅ 事件已订阅")
 
-        # 查询 offers_event 详细数据
-        offers_event = await self.page.evaluate(f'''
-            window.queryData.offersEvent("{event_key}")
+        # 查询 offers_event 详细数据 - 只获取 ah 盘口
+        ah_lines = await self.page.evaluate(f'''
+            window.queryData.parseAllOfferEventLines("{event_key}", "ah")
         ''')
 
-        if offers_event:
-            logger.info(f"✅ 获取到 offers_event 详细数据,包含 {len(offers_event)} 种 offer_type")
-            # 打印 offers_event 的 offer_type 列表
-            logger.info(f"Offers Event 类型: {list(offers_event.keys())}")
+        if ah_lines:
+            logger.info(f"✅ 获取到 ah 盘口详细数据,共 {len(ah_lines)} 个 line_id")
+            logger.info(f"\n{'='*60}")
+            logger.info(f"📊 AH 盘口详细数据:")
+            logger.info(f"{'='*60}")
+
+            for idx, line_data in enumerate(ah_lines, 1):
+                line_id = line_data.get('line_id')
+                odds = line_data.get('odds')
+                logger.info(f"\n  [{idx}] Line ID: {line_id}")
+                logger.info(f"      Odds: {odds}")
+
+            logger.info(f"{'='*60}\n")
         else:
-            logger.warning(f"⚠️ 未获取到 offers_event 数据")
+            logger.warning(f"⚠️ 未获取到 ah 盘口数据")
 
     except Exception as e:
         logger.error(f"❌ watch_event 处理异常: {e}")
