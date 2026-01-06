@@ -209,28 +209,75 @@ async def main():
 
                 # 显示结果
                 logger.info("\n📊 GetOdd 结果:")
-                logger.info(f"  - 成功: {odd_result.get('success')}")
+                if odd_result:
+                    logger.info(f"  - 成功: {odd_result.get('success')}")
 
-                if odd_result.get('success'):
-                    logger.info(f"  - Event Key: {odd_result.get('event_key')}")
-                    logger.info(f"  - 赔率: {odd_result.get('odd')}")
-                    logger.info(f"  - 盘口总数: {odd_result.get('total_markets')}")
-                    logger.info(f"  - 匹配类型: {odd_result.get('match_info', {}).get('match_type')}")
-                    logger.info(f"  - 匹配分数: {odd_result.get('match_info', {}).get('score')}")
+                    if odd_result.get('success'):
+                        logger.info(f"  - Event Key: {odd_result.get('event_key')}")
+                        logger.info(f"  - 赔率: {odd_result.get('odd')}")
+                        logger.info(f"  - 盘口总数: {odd_result.get('total_markets')}")
+                        logger.info(f"  - 匹配类型: {odd_result.get('match_info', {}).get('match_type')}")
+                        logger.info(f"  - 匹配分数: {odd_result.get('match_info', {}).get('score')}")
 
-                    # 显示完整的 event 信息
-                    event = odd_result.get('match_info', {}).get('event', {})
-                    logger.info(f"\n  - Event 详情:")
-                    logger.info(f"    · 主队: {event.get('home')}")
-                    logger.info(f"    · 客队: {event.get('away')}")
-                    logger.info(f"    · 联赛: {event.get('competition_name')}")
-                    logger.info(f"    · 运动: {event.get('sport')}")
-                    logger.info(f"    · 是否进行中: {event.get('isInRunning')}")
+                        # 显示完整的 event 信息
+                        event = odd_result.get('match_info', {}).get('event', {})
+                        logger.info(f"\n  - Event 详情:")
+                        logger.info(f"    · 主队: {event.get('home')}")
+                        logger.info(f"    · 客队: {event.get('away')}")
+                        logger.info(f"    · 联赛: {event.get('competition_name')}")
+                        logger.info(f"    · 运动: {event.get('sport')}")
+                        logger.info(f"    · 是否进行中: {event.get('isInRunning')}")
+                    else:
+                        logger.error(f"  - 错误信息: {odd_result.get('message')}")
                 else:
-                    logger.error(f"  - 错误信息: {odd_result.get('message')}")
+                    logger.warning("  - GetOdd 返回 None，跳过结果显示")
 
                 logger.info("\n" + "="*60)
-                logger.info("🧪 测试完成")
+                logger.info("🧪 GetOdd 测试完成")
+                logger.info("="*60 + "\n")
+
+                # ========== 测试 CreateBetslip 功能 ==========
+                # 不依赖 GetOdd 结果，直接测试
+                logger.info("\n" + "="*60)
+                logger.info("🧪 测试 CreateBetslip 功能")
+                logger.info("="*60)
+
+                # 测试使用简单的 Money Line 投注
+                from automationPlaywright.betinasian.operations.CreateBetslip import create_betslip
+
+                # 测试数据: 简单的 Money Line 投注
+                logger.info("\n📋 测试数据:")
+                event_id = "2026-01-06,63025,40954"
+                bet_type = "for,ml,a"
+                logger.info(f"  - Event ID: {event_id}")
+                logger.info(f"  - Bet Type: {bet_type} (Money Line - Away)")
+                logger.info(f"  - Sport: basket")
+
+                try:
+                    betslip_result = await create_betslip(
+                        page=target_page,
+                        sport="basket",
+                        event_id=event_id,
+                        bet_type=bet_type
+                    )
+
+                    # 显示结果
+                    logger.info("\n📊 CreateBetslip 结果:")
+                    logger.info(f"  - 成功: {betslip_result.get('success')}")
+                    logger.info(f"  - 状态码: {betslip_result.get('status')}")
+
+                    if betslip_result.get('success'):
+                        logger.info(f"  - 响应数据:")
+                        import json
+                        logger.info(json.dumps(betslip_result.get('data'), indent=4, ensure_ascii=False))
+                    else:
+                        logger.error(f"  - 错误: {betslip_result.get('error')}")
+
+                except Exception as e:
+                    logger.error(f"❌ CreateBetslip 测试失败: {e}", exc_info=True)
+
+                logger.info("\n" + "="*60)
+                logger.info("🧪 CreateBetslip 测试完成")
                 logger.info("="*60 + "\n")
 
                 # 进入死循环，保持程序运行
