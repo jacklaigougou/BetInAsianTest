@@ -34,8 +34,20 @@ class OffersHandler {
             // 2. 根据消息类型路由到不同的存储
             if (type === 'offers_event') {
                 // offers_event → offers_event_store
+                // 完整重索引流程: 先移除旧索引,再建立新索引
+                const old = window.__offersEventStore.get(eventKey)?.raw_data;
                 window.__offersEventStore.update(eventKey, data);
-                window.__offersEventManager.indexOffersEvent(eventKey, data);
+
+                // 移除旧索引 (如果存在)
+                if (old) {
+                    window.__offersEventManager.removeIndexes(eventKey, old);
+                }
+
+                // 建立新索引 (基于合并后的最终数据)
+                const merged = window.__offersEventStore.get(eventKey)?.raw_data;
+                if (merged) {
+                    window.__offersEventManager.indexOffersEvent(eventKey, merged);
+                }
             } else {
                 // offers_hcap / offers_odds → offers_hcap_store
                 window.__offersHcapStore.update(eventKey, data);

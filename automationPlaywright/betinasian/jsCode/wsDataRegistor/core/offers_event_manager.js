@@ -22,7 +22,19 @@ class OffersEventManager {
      * @param {Object} offersData - offers_event 数据对象
      */
     indexOffersEvent(eventKey, offersData) {
+        // 防御: 检查 offersData 是否为有效对象
+        if (!offersData || typeof offersData !== 'object') {
+            console.warn('[OffersEventManager] indexOffersEvent: invalid offersData', { eventKey, offersData });
+            return;
+        }
+
         for (const [offerType, lines] of Object.entries(offersData)) {
+            // 防御: 检查 lines 是否为数组
+            if (!Array.isArray(lines)) {
+                console.warn('[OffersEventManager] indexOffersEvent: lines is not an array', { eventKey, offerType, lines });
+                continue;
+            }
+
             // 索引1: byOfferType
             if (!this.indexes.byOfferType.has(offerType)) {
                 this.indexes.byOfferType.set(offerType, new Set());
@@ -37,6 +49,12 @@ class OffersEventManager {
 
             // 索引3: byEventOfferLine (每个 line_id)
             for (const [lineId, oddsArray] of lines) {
+                // 防御: 检查 oddsArray 是否为数组
+                if (!Array.isArray(oddsArray)) {
+                    console.warn('[OffersEventManager] indexOffersEvent: oddsArray is not an array', { eventKey, offerType, lineId, oddsArray });
+                    continue;
+                }
+
                 const indexKey = `${eventKey}|${offerType}|${lineId}`;
                 this.indexes.byEventOfferLine.set(indexKey, eventKey);
                 this.indexes.byEventOffer.get(eventOfferKey).add(lineId);
@@ -199,7 +217,19 @@ class OffersEventManager {
      * @param {Object} offersData
      */
     removeIndexes(eventKey, offersData) {
+        // 防御: 检查 offersData 是否为有效对象
+        if (!offersData || typeof offersData !== 'object') {
+            console.warn('[OffersEventManager] removeIndexes: invalid offersData', { eventKey, offersData });
+            return;
+        }
+
         for (const [offerType, lines] of Object.entries(offersData)) {
+            // 防御: 检查 lines 是否为数组
+            if (!Array.isArray(lines)) {
+                console.warn('[OffersEventManager] removeIndexes: lines is not an array', { eventKey, offerType, lines });
+                continue;
+            }
+
             // 移除 byOfferType
             if (this.indexes.byOfferType.has(offerType)) {
                 this.indexes.byOfferType.get(offerType).delete(eventKey);

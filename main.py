@@ -247,7 +247,7 @@ async def main():
 
                 # 测试数据: 简单的 Money Line 投注
                 logger.info("\n📋 测试数据:")
-                event_id = "2026-01-07,62109,40728"
+                event_id = "2026-01-07,96326,41086"
                 bet_type = "for,ml,a"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
                 logger.info(f"  - Event ID: {event_id}")
                 logger.info(f"  - Bet Type: {bet_type} (Away)")
