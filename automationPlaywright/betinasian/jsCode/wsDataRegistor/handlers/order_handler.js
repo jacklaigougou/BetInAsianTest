@@ -52,10 +52,13 @@ class OrderHandler {
     }
 
     processOrder(orderData) {
-        // Validate required fields
-        if (!orderData.id || !orderData.event_id) {
+        // Validate required fields (支持两种格式: order_id 或 id, event_id 或 event_info.event_id)
+        const hasId = orderData.order_id || orderData.id;
+        const hasEventId = orderData.event_id || (orderData.event_info && orderData.event_info.event_id);
+
+        if (!hasId || !hasEventId) {
             console.warn('[Order Handler] Missing required fields:', orderData);
-            return;
+            return null;
         }
 
         // Store to orderStore (state machine is called inside storeOrder)
@@ -69,17 +72,21 @@ class OrderHandler {
                 this.recentMessages.push({
                     ts: Date.now(),
                     order_id: order.order_id,
-                    status: order.status,
+                    state: order.state,
                     message: orderData
                 });
 
                 if (this.recentMessages.length > 10) {
                     this.recentMessages.shift();
                 }
+
+                return order;
             }
         } else {
             console.error('[Order Handler] orderStore not available');
         }
+
+        return null;
     }
 
     getStats() {

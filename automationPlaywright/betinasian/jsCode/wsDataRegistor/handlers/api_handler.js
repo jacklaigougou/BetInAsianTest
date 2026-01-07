@@ -18,6 +18,42 @@ class ApiHandler {
      */
     handle({ type, sportPeriod, eventKey, data }) {
         try {
+            // ========== 检测并处理嵌套的 order/bet 消息 ==========
+            // WebSocket 格式: ["api", {ts: ..., data: [["order", {...}], ["bet", {...}]]}]
+            if (data && typeof data === 'object' && Array.isArray(data.data)) {
+                console.log(`[API Handler] 🔍 检测到嵌套消息，包含 ${data.data.length} 条内部消息`);
+
+                let orderCount = 0;
+                let betCount = 0;
+
+                // 遍历内部消息数组
+                for (const innerMessage of data.data) {
+                    if (!Array.isArray(innerMessage) || innerMessage.length < 2) {
+                        continue;
+                    }
+
+                    const [messageType, messageData] = innerMessage;
+
+                    // 分发 order 消息
+                    if (messageType === 'order' && window.__orderHandler) {
+                        window.__orderHandler.processOrder(messageData);
+                        orderCount++;
+                    }
+                    // 分发 bet 消息
+                    else if (messageType === 'bet' && window.__betHandler) {
+                        window.__betHandler.processBet(messageData);
+                        betCount++;
+                    }
+                }
+
+                if (orderCount > 0 || betCount > 0) {
+                    console.log(`[API Handler] ✅ 分发完成: ${orderCount} orders, ${betCount} bets`);
+                }
+
+                return true;
+            }
+
+            // ========== 常规 API 消息存储 ==========
             // 提取 API 类型 (例如: api_pmm → pmm)
             const apiType = type.replace('api_', '').replace('api/', '');
 
@@ -37,6 +73,7 @@ class ApiHandler {
             return true;
 
         } catch (error) {
+            console.error('[API Handler] Error:', error);
             return false;
         }
     }

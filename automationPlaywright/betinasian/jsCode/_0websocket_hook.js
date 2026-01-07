@@ -48,8 +48,15 @@
                         if (Array.isArray(data)) {
                             // 批量消息: [ [msg1], [msg2], [msg3], ... ]
                             data.forEach(message => {
-                                if (Array.isArray(message) && message.length >= 3) {
-                                    window.registerMessage(message);
+                                if (Array.isArray(message)) {
+                                    // 常规消息: length >= 3 (例如 ["event", [sport, key], data])
+                                    // API 消息: length = 2 (例如 ["api", {ts, data: [...]}])
+                                    const isRegularMessage = message.length >= 3;
+                                    const isApiMessage = message.length === 2 && message[0] === 'api';
+
+                                    if (isRegularMessage || isApiMessage) {
+                                        window.registerMessage(message);
+                                    }
                                 }
                             });
                         }

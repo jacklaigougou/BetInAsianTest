@@ -247,8 +247,8 @@ async def main():
 
                 # 测试数据: 简单的 Money Line 投注
                 logger.info("\n📋 测试数据:")
-                event_id = "2026-01-07,41031,50205"
-                bet_type = "for,ml,h"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
+                event_id = "2026-01-07,62109,40728"
+                bet_type = "for,ml,a"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
                 logger.info(f"  - Event ID: {event_id}")
                 logger.info(f"  - Bet Type: {bet_type} (Away)")
                 logger.info(f"  - Sport: basket")
@@ -453,17 +453,17 @@ async def main():
                                 logger.info(f"\n📋 下单参数:")
                                 logger.info(f"  - Betslip ID: {betslip_id}")
                                 logger.info(f"  - Price: {best_price} (来自 {best_bookie} 的最高价格)")
-                                logger.info(f"  - Stake: 1 USD")
-                                logger.info(f"  - Duration: 10 seconds")
+                                logger.info(f"  - Stake: 2 USD")
+                                logger.info(f"  - Duration: 30 seconds")
 
                                 try:
                                     order_result = await place_order(
                                         page=target_page,
                                         betslip_id=betslip_id,
                                         price=best_price,
-                                        stake=1,
+                                        stake=2,
                                         currency="USD",
-                                        duration=10
+                                        duration=30
                                     )
 
                                     # 显示结果
@@ -479,6 +479,354 @@ async def main():
 
                                 except Exception as e:
                                     logger.error(f"❌ PlaceOrder 测试失败: {e}", exc_info=True)
+
+                                # ========== 测试 GetOrder 功能 (查询下单结果) ==========
+                                if order_result.get('success') and order_result.get('data'):
+                                    logger.info("\n" + "="*60)
+                                    logger.info("🧪 测试 GetOrder 功能 - 查询下单结果")
+                                    logger.info("="*60)
+
+                                    from automationPlaywright.betinasian.jsCodeExcutors import (
+                                        get_order_by_id,
+                                        get_order_with_bets,
+                                        check_order_slippage
+                                    )
+
+                                    # 从下单响应中提取 order_id (可能是数字或字符串)
+                                    order_id = order_result['data']['data'].get('order_id')
+
+                                    if not order_id:
+                                        logger.error("❌ 无法从响应中提取 order_id")
+                                    else:
+                                        # 转换为字符串
+                                        order_id_str = str(order_id)
+                                        logger.info(f"\n📋 订单ID: {order_id_str}")
+
+                                        # 🔍 调试: 检查 Adapter 和 Store 状态
+                                        debug_info = await target_page.evaluate("""
+                                            () => {
+                                                return {
+                                                    adapter_loaded: !!window.orderAdapter,
+                                                    store_loaded: !!window.orderStore,
+                                                    handler_loaded: !!window.__orderHandler,
+                                                    store_size: window.orderStore ? window.orderStore.store.size : 0,
+                                                    handler_stats: window.__orderHandler ? window.__orderHandler.getStats() : null
+                                                };
+                                            }
+                                        """)
+                                        logger.info(f"🔍 Debug Info:")
+                                        logger.info(f"  - Adapter Loaded: {debug_info.get('adapter_loaded')}")
+                                        logger.info(f"  - Store Loaded: {debug_info.get('store_loaded')}")
+                                        logger.info(f"  - Handler Loaded: {debug_info.get('handler_loaded')}")
+                                        logger.info(f"  - Store Size: {debug_info.get('store_size')}")
+                                        logger.info(f"  - Handler Stats: {debug_info.get('handler_stats')}")
+
+                                        # 🔍 等待2秒后再次检查 Store
+                                        await asyncio.sleep(2)
+
+                                        store_check = await target_page.evaluate(f"""
+                                            () => {{
+                                                const orderId = "{order_id_str}";
+
+                                                // 检查 Store 中是否有这个订单
+                                                const hasOrder = window.orderStore && window.orderStore.store.has(orderId);
+
+                                                // 获取所有订单ID (限制前10个)
+                                                let allOrderIds = [];
+                                                if (window.orderStore) {{
+                                                    allOrderIds = Array.from(window.orderStore.store.keys()).slice(0, 10);
+                                                }}
+
+                                                return {{
+                                                    has_order: hasOrder,
+                                                    current_store_size: window.orderStore ? window.orderStore.store.size : 0,
+                                                    all_order_ids: allOrderIds,
+                                                    looking_for: orderId
+                                                }};
+                                            }}
+                                        """)
+
+                                        logger.info(f"\n🔍 Store Check (2秒后):")
+                                        logger.info(f"  - Looking for: {store_check.get('looking_for')}")
+                                        logger.info(f"  - Has Order: {store_check.get('has_order')}")
+                                        logger.info(f"  - Store Size: {store_check.get('current_store_size')}")
+                                        logger.info(f"  - All Order IDs: {store_check.get('all_order_ids')}")
+
+                                        # 🔍 检查 API Handler 和 Router 是否有新代码
+                                        code_check = await target_page.evaluate("""
+                                            () => {
+                                                // 检查 API Handler
+                                                const handlerSource = window.__apiHandler?.handle?.toString() || '';
+                                                const hasNestedMessageDetection = handlerSource.includes('检测到嵌套消息');
+
+                                                // 检查 Message Router
+                                                const routerSource = window.__messageRouter?.route?.toString() || '';
+                                                const hasApiSpecialHandling = routerSource.includes('特殊处理: API 消息');
+
+                                                // 检查 Bet Adapter (ID 类型转换)
+                                                const betAdapterSource = window.betAdapter?.normalizeBetData?.toString() || '';
+                                                const hasBetIdConversion = betAdapterSource.includes('Convert IDs to strings');
+
+                                                // 检查 Router 统计
+                                                const routerStats = window.__messageRouter?.getStats() || {};
+
+                                                return {
+                                                    api_handler_exists: !!window.__apiHandler,
+                                                    api_handler_new_code: hasNestedMessageDetection,
+                                                    router_exists: !!window.__messageRouter,
+                                                    router_new_code: hasApiSpecialHandling,
+                                                    bet_adapter_exists: !!window.betAdapter,
+                                                    bet_adapter_new_code: hasBetIdConversion,
+                                                    router_stats: routerStats
+                                                };
+                                            }
+                                        """)
+
+                                        logger.info(f"\n🔍 代码版本检查:")
+                                        logger.info(f"  - API Handler: {code_check.get('api_handler_new_code')}")
+                                        logger.info(f"  - Router: {code_check.get('router_new_code')}")
+                                        logger.info(f"  - Bet Adapter: {code_check.get('bet_adapter_new_code')}")
+                                        logger.info(f"  - Router Stats: {code_check.get('router_stats')}")
+
+                                        needs_reload = (not code_check.get('api_handler_new_code') or
+                                                       not code_check.get('router_new_code') or
+                                                       not code_check.get('bet_adapter_new_code'))
+
+                                        if needs_reload:
+                                            logger.error("❌ 检测到旧代码！正在重新加载...")
+
+                                            # 重新加载所有 Handler、Router 和 Adapter
+                                            from automationPlaywright.betinasian.jsCodeExcutors.inject_hook import load_js_file
+
+                                            files_to_reload = [
+                                                'wsDataRegistor/message_router.js',
+                                                'wsDataRegistor/handlers/api_handler.js',
+                                                'wsDataRegistor/handlers/order_handler.js',
+                                                'wsDataRegistor/handlers/bet_handler.js',
+                                                'wsDataRegistor/core/bet_adapter.js',  # 添加 Bet Adapter
+                                                'wsDataRegistor/core/order_adapter.js'  # 添加 Order Adapter
+                                            ]
+
+                                            for file_path in files_to_reload:
+                                                file_code = load_js_file(file_path, 'betinasian')
+                                                if file_code:
+                                                    await target_page.evaluate(file_code)
+                                                    logger.info(f"  ✅ 重新加载: {file_path}")
+
+                                            # 再次检查所有组件
+                                            recheck = await target_page.evaluate("""
+                                                () => {
+                                                    const apiHandlerOk = window.__apiHandler?.handle?.toString().includes('检测到嵌套消息');
+                                                    const routerOk = window.__messageRouter?.route?.toString().includes('特殊处理: API 消息');
+                                                    const betAdapterOk = window.betAdapter?.normalizeBetData?.toString().includes('Convert IDs to strings');
+                                                    return { apiHandlerOk, routerOk, betAdapterOk };
+                                                }
+                                            """)
+                                            logger.info(f"  🔍 重新检查: API Handler={recheck.get('apiHandlerOk')}, Router={recheck.get('routerOk')}, Bet Adapter={recheck.get('betAdapterOk')}")
+                                        else:
+                                            logger.info("  ✅ 所有组件已是最新代码")
+
+                                        # 获取 duration (从下单参数获取，默认30秒)
+                                        duration = 30
+                                        timeout = duration + 5  # duration + 5秒缓冲
+
+                                        logger.info(f"\n⏳ 开始监控订单状态 (最长 {timeout} 秒)...")
+
+                                        import time
+                                        start_time = time.time()
+                                        found_order = False
+
+                                        try:
+                                            # 轮询查询订单状态
+                                            while time.time() - start_time < timeout:
+                                                elapsed = int(time.time() - start_time)
+                                                logger.info(f"\n[{elapsed}s] 查询订单状态...")
+
+                                                order = await get_order_by_id(target_page, order_id_str)
+
+                                                if order:
+                                                    found_order = True
+                                                    state = order.get('state')
+                                                    bet_bar = order.get('bet_bar', {})
+
+                                                    logger.info(f"  ✅ 找到订单 - State: {state}")
+                                                    logger.info(f"     Bet Bar: success={bet_bar.get('success', 0)}, "
+                                                              f"inprogress={bet_bar.get('inprogress', 0)}, "
+                                                              f"danger={bet_bar.get('danger', 0)}, "
+                                                              f"unplaced={bet_bar.get('unplaced', 0)}")
+
+                                                    # 检查是否完成
+                                                    if state in ['FINISHED', 'EXPIRED_LOCAL']:
+                                                        logger.info(f"\n{'✅' if state == 'FINISHED' else '⏱️'} 订单已结束: {state}")
+                                                        break
+                                                else:
+                                                    logger.info("  ⏳ 订单还未进入 Store，继续等待...")
+
+                                                # 等待1秒后继续轮询
+                                                await asyncio.sleep(1)
+
+                                            # 轮询结束后显示最终结果
+                                            if found_order and order:
+                                                logger.info(f"\n" + "="*60)
+                                                logger.info("📊 最终订单状态:")
+                                                logger.info("="*60)
+                                                logger.info(f"  - Order ID: {order.get('order_id')}")
+                                                logger.info(f"  - State: {order.get('state')}")
+                                                logger.info(f"  - Raw Status: {order.get('raw_status')}")
+                                                logger.info(f"  - Event ID: {order.get('event_id')}")
+                                                logger.info(f"  - Betslip ID: {order.get('betslip_id')}")
+
+                                                # 显示 bet_bar
+                                                bet_bar = order.get('bet_bar', {})
+                                                logger.info(f"\n  📊 Bet Bar:")
+                                                logger.info(f"    - Success: {bet_bar.get('success', 0)}")
+                                                logger.info(f"    - In Progress: {bet_bar.get('inprogress', 0)}")
+                                                logger.info(f"    - Danger: {bet_bar.get('danger', 0)}")
+                                                logger.info(f"    - Unplaced: {bet_bar.get('unplaced', 0)}")
+
+                                                # 显示状态机摘要
+                                                state_summary = order.get('state_summary', {})
+                                                if state_summary:
+                                                    logger.info(f"\n  🔄 State Summary:")
+                                                    logger.info(f"    - Current State: {state_summary.get('state')}")
+                                                    logger.info(f"    - Is Done: {state_summary.get('isDone')}")
+                                                    logger.info(f"    - Next State: {state_summary.get('nextState')}")
+
+                                                # 先检查 Bet Store 和 Handler 状态
+                                                logger.info("\n🔍 检查 Bet Store 状态...")
+                                                bet_info = await target_page.evaluate("""
+                                                    (order_id) => {
+                                                        // Bet Store 信息
+                                                        const bet_store_exists = !!window.betStore;
+                                                        const bet_store_size = window.betStore ? window.betStore.store.size : 0;
+                                                        const bet_handler_exists = !!window.__betHandler;
+                                                        const bet_handler_stats = window.__betHandler ? window.__betHandler.getStats() : null;
+
+                                                        // 直接检查索引
+                                                        let byOrder_index = null;
+                                                        if (window.betStore && window.betStore.indexes.byOrder) {
+                                                            const orderBets = window.betStore.indexes.byOrder.get(order_id);
+                                                            byOrder_index = orderBets ? Array.from(orderBets) : null;
+                                                        }
+
+                                                        // 检查 Store 中所有 bet
+                                                        let all_bets = [];
+                                                        if (window.betStore && window.betStore.store) {
+                                                            all_bets = Array.from(window.betStore.store.entries()).map(([bet_id, bet]) => ({
+                                                                bet_id: bet_id,
+                                                                order_id: bet.order_id,
+                                                                bookie: bet.bookie,
+                                                                status: bet.status
+                                                            }));
+                                                        }
+
+                                                        // 测试 getBetsByOrder
+                                                        let getBetsByOrder_result = null;
+                                                        if (window.betStore && window.betStore.getBetsByOrder) {
+                                                            getBetsByOrder_result = window.betStore.getBetsByOrder(order_id);
+                                                        }
+
+                                                        // Order 内部数组
+                                                        const order_arrays = window.orderStore ?
+                                                            Array.from(window.orderStore.store.values()).map(o => ({
+                                                                order_id: o.order_id,
+                                                                success: o.success,
+                                                                inprogress: o.inprogress,
+                                                                danger: o.danger,
+                                                                unplaced: o.unplaced
+                                                            })) : [];
+
+                                                        return {
+                                                            bet_store_exists,
+                                                            bet_store_size,
+                                                            bet_handler_exists,
+                                                            bet_handler_stats,
+                                                            byOrder_index,
+                                                            all_bets,
+                                                            getBetsByOrder_result,
+                                                            order_arrays
+                                                        };
+                                                    }
+                                                """, order_id_str)
+
+                                                logger.info(f"  - Bet Store Exists: {bet_info.get('bet_store_exists')}")
+                                                logger.info(f"  - Bet Store Size: {bet_info.get('bet_store_size')}")
+                                                logger.info(f"  - Bet Handler Exists: {bet_info.get('bet_handler_exists')}")
+                                                logger.info(f"  - Bet Handler Stats: {bet_info.get('bet_handler_stats')}")
+
+                                                # 显示索引检查
+                                                byOrder_index = bet_info.get('byOrder_index')
+                                                logger.info(f"\n  🔍 Bet Store byOrder Index:")
+                                                logger.info(f"    - Order {order_id_str} 的索引: {byOrder_index}")
+
+                                                # 显示所有 Bet
+                                                all_bets = bet_info.get('all_bets', [])
+                                                if all_bets:
+                                                    logger.info(f"\n  📊 Bet Store 中所有 Bet ({len(all_bets)} 个):")
+                                                    for bet in all_bets:
+                                                        logger.info(f"    - Bet {bet.get('bet_id')}: order_id={bet.get('order_id')}, bookie={bet.get('bookie')}, status={bet.get('status')}")
+
+                                                # 显示 getBetsByOrder 结果
+                                                getBetsByOrder_result = bet_info.get('getBetsByOrder_result')
+                                                logger.info(f"\n  🔍 getBetsByOrder('{order_id_str}') 返回: {len(getBetsByOrder_result) if getBetsByOrder_result else 0} 个 bet")
+
+                                                # 显示 Order 内部的 bet 数组
+                                                order_arrays = bet_info.get('order_arrays', [])
+                                                if order_arrays:
+                                                    logger.info(f"\n  📊 Order 内部的 Bet 数组:")
+                                                    for o in order_arrays:
+                                                        logger.info(f"    Order {o.get('order_id')}:")
+                                                        logger.info(f"      - success: {o.get('success')}")
+                                                        logger.info(f"      - inprogress: {o.get('inprogress')}")
+                                                        logger.info(f"      - danger: {o.get('danger')}")
+                                                        logger.info(f"      - unplaced: {o.get('unplaced')}")
+
+                                                # 查询所有 bets
+                                                logger.info("\n📊 查询所有 Bets...")
+                                                result_with_bets = await get_order_with_bets(target_page, order_id_str)
+
+                                                if result_with_bets:
+                                                    bets = result_with_bets.get('bets', [])
+                                                    logger.info(f"\n  ✅ 找到 {len(bets)} 个 Bet:")
+
+                                                    for i, bet in enumerate(bets, 1):
+                                                        logger.info(f"\n  Bet #{i}:")
+                                                        logger.info(f"    - Bet ID: {bet.get('bet_id')}")
+                                                        logger.info(f"    - Bookie: {bet.get('bookie')}")
+                                                        logger.info(f"    - Status: {bet.get('status')}")
+                                                        logger.info(f"    - Price: {bet.get('price')}")
+                                                        logger.info(f"    - Stake: {bet.get('stake')}")
+                                                        logger.info(f"    - Matched Price: {bet.get('matched_price')}")
+                                                        logger.info(f"    - Matched Stake: {bet.get('matched_stake')}")
+                                                        logger.info(f"    - Unmatched Stake: {bet.get('unmatched_stake')}")
+
+                                                # 检查滑点
+                                                logger.info("\n📊 检查价格滑点...")
+                                                slippage = await check_order_slippage(target_page, order_id_str)
+
+                                                if slippage:
+                                                    logger.info(f"\n  ✅ 滑点分析:")
+                                                    logger.info(f"    - Total Slippage: {slippage.get('total_slippage')}")
+                                                    logger.info(f"    - Avg Slippage: {slippage.get('avg_slippage')}")
+                                                    logger.info(f"    - Avg Slippage %: {slippage.get('avg_slippage_pct')}")
+                                                    logger.info(f"    - Bet Count: {slippage.get('bet_count')}")
+
+                                                    for bet_slip in slippage.get('bets', []):
+                                                        logger.info(f"\n    Bet {bet_slip.get('bet_id')} ({bet_slip.get('bookie')}):")
+                                                        logger.info(f"      - Requested: {bet_slip.get('requested_price')}")
+                                                        logger.info(f"      - Matched: {bet_slip.get('matched_price')}")
+                                                        logger.info(f"      - Slippage: {bet_slip.get('slippage_pct')}")
+                                                else:
+                                                    logger.info("  ⚠️ 无滑点数据 (可能还没有matched的bet)")
+                                            else:
+                                                logger.warning(f"\n⚠️ 超时 ({timeout}秒) - 订单未找到或未进入 Store")
+
+                                        except Exception as e:
+                                            logger.error(f"❌ GetOrder 测试失败: {e}", exc_info=True)
+
+                                        logger.info("\n" + "="*60)
+                                        logger.info("🧪 GetOrder 测试完成")
+                                        logger.info("="*60 + "\n")
 
                             logger.info("\n" + "="*60)
                             logger.info("🧪 PlaceOrder 测试完成")

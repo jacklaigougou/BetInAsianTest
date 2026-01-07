@@ -233,9 +233,20 @@ function storeOrder(rawOrderData) {
         unplaced
     } = normalizedData;
 
+    // 🔍 DEBUG: 打印 normalized data
+    console.log('[DEBUG storeOrder]', {
+        order_id: normalizedData.order_id,
+        event_id: normalizedData.event_id,
+        raw_status: normalizedData.raw_status,
+        closed: normalizedData.closed,
+        has_adapter: !!window.orderAdapter
+    });
+
     // Validate required fields
     if (!order_id || !event_id) {
-        console.warn('[Order Store] Missing required fields:', normalizedData);
+        console.warn('[Order Store] ❌ Missing required fields!');
+        console.warn('[Order Store] Normalized:', { order_id, event_id, raw_status: normalizedData.raw_status });
+        console.warn('[Order Store] Raw data:', rawOrderData);
         return null;
     }
 
@@ -318,7 +329,8 @@ function storeOrder(rawOrderData) {
         orderStore.set(order_id, order);
         attachIndexes(order);
 
-        if (expires_at) {
+        // Push to expiry queue if expires_at is valid
+        if (expires_at !== undefined && expires_at !== null) {
             expiryQueue.push(order_id, expires_at);
         }
 

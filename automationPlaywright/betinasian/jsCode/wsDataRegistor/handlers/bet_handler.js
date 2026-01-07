@@ -58,7 +58,7 @@ class BetHandler {
 
         if (!bet_id || !order_id) {
             console.warn('[Bet Handler] Missing required fields:', betData);
-            return;
+            return null;
         }
 
         // Store to betStore (adapter is called inside)
@@ -94,10 +94,14 @@ class BetHandler {
                 if (this.recentMessages.length > 10) {
                     this.recentMessages.shift();
                 }
+
+                return bet;
             }
         } else {
             console.error('[Bet Handler] betStore not available');
         }
+
+        return null;
     }
 
     updateRelatedOrder(order_id) {

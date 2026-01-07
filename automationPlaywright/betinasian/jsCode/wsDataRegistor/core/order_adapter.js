@@ -78,7 +78,9 @@ function parseISOToUnixMs(isoString) {
 
 /**
  * Convert bet_bar_values object to arrays
- * @param {Object} betBarValues - { success: 0, inprogress: 15, danger: 0, unplaced: 0 }
+ * @param {Object} betBarValues - Two possible formats:
+ *   1. { success: 0, inprogress: 15, danger: 0, unplaced: 0 }  (numbers)
+ *   2. { success: ["USD", 0.0], inprogress: ["USD", 0.0], ... }  (arrays)
  * @param {string} bookie - Bookie name (optional)
  * @returns {Object} { success: [], inprogress: [["bf", 15]], danger: [], unplaced: [] }
  */
@@ -94,21 +96,35 @@ function convertBetBarToArrays(betBarValues, bookie = null) {
         return result;
     }
 
-    // Convert numeric values to [bookie, amount] tuples
-    // If no bookie, use amount directly
     const bookieName = bookie || 'unknown';
 
-    if (betBarValues.success > 0) {
-        result.success.push([bookieName, betBarValues.success]);
+    // Helper to extract value from either number or ["CCY", amount] array
+    function extractValue(val) {
+        if (typeof val === 'number') {
+            return val;
+        }
+        if (Array.isArray(val) && val.length === 2) {
+            return val[1];  // ["USD", 1.0] → 1.0
+        }
+        return 0;
     }
-    if (betBarValues.inprogress > 0) {
-        result.inprogress.push([bookieName, betBarValues.inprogress]);
+
+    const successVal = extractValue(betBarValues.success);
+    const inprogressVal = extractValue(betBarValues.inprogress);
+    const dangerVal = extractValue(betBarValues.danger);
+    const unplacedVal = extractValue(betBarValues.unplaced);
+
+    if (successVal > 0) {
+        result.success.push([bookieName, successVal]);
     }
-    if (betBarValues.danger > 0) {
-        result.danger.push([bookieName, betBarValues.danger]);
+    if (inprogressVal > 0) {
+        result.inprogress.push([bookieName, inprogressVal]);
     }
-    if (betBarValues.unplaced > 0) {
-        result.unplaced.push([bookieName, betBarValues.unplaced]);
+    if (dangerVal > 0) {
+        result.danger.push([bookieName, dangerVal]);
+    }
+    if (unplacedVal > 0) {
+        result.unplaced.push([bookieName, unplacedVal]);
     }
 
     return result;
@@ -137,15 +153,21 @@ function normalizeOrderData(upstreamData) {
             duration = Math.floor((expires_at / 1000) - created_at);
         }
 
+        // Extract event_id from event_info or top level
+        const event_id = upstreamData.event_info?.event_id || upstreamData.event_id;
+
         // Convert bet_bar_values to arrays
         const betBarArrays = convertBetBarToArrays(
             upstreamData.bet_bar_values,
             upstreamData.bookie
         );
 
+        // Normalize order_id to string for consistent storage
+        const order_id = String(upstreamData.order_id);
+
         return {
-            order_id: upstreamData.order_id,
-            event_id: upstreamData.event_id,
+            order_id: order_id,
+            event_id: event_id,
             betslip_id: upstreamData.betslip_id,
             raw_status: upstreamData.status,  // Keep original status
             closed: upstreamData.closed,

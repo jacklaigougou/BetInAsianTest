@@ -31,6 +31,43 @@ class MessageRouter {
         this.stats.totalMessages++;
 
         try {
+            // ========== 特殊处理: API 消息 (包含 order/bet) ==========
+            // API 消息格式: ["api", {ts: ..., data: [["order", {...}], ["bet", {...}]]}]
+            if (Array.isArray(message) && message.length >= 2 && message[0] === 'api') {
+                const [messageType, apiData] = message;
+
+                // 统计
+                if (!this.stats.byType[messageType]) {
+                    this.stats.byType[messageType] = 0;
+                }
+                this.stats.byType[messageType]++;
+
+                // 获取 API handler
+                const handler = this.getHandler(messageType);
+                if (!handler) {
+                    this.stats.errorCount++;
+                    return false;
+                }
+
+                // 直接传递 API 数据给 handler (handler 会自己解包)
+                const success = handler.handle({
+                    type: messageType,
+                    sportPeriod: null,
+                    eventKey: null,
+                    data: apiData,
+                    competitionId: null
+                });
+
+                if (success) {
+                    this.stats.successCount++;
+                } else {
+                    this.stats.errorCount++;
+                }
+
+                return success;
+            }
+
+            // ========== 常规消息处理 ==========
             // 1. 验证消息格式
             if (!this.validateMessage(message)) {
                 this.stats.errorCount++;
@@ -90,6 +127,7 @@ class MessageRouter {
             return success;
 
         } catch (error) {
+            console.error('[Message Router] Error:', error);
             this.stats.errorCount++;
             return false;
         }

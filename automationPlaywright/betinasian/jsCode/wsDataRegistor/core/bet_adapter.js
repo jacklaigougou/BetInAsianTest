@@ -79,19 +79,32 @@ function normalizeBetData(upstreamData) {
     // 1. New format: { bet_id, order_id, status: { code: "done" }, got_price, got_stake, ... }
     // 2. Old format: { id, order_id, status: "MATCHED", price, stake, matched_price, ... }
 
-    const bet_id = upstreamData.bet_id || upstreamData.id;
-    const order_id = upstreamData.order_id;
+    // IMPORTANT: Convert IDs to strings to match Order Store format
+    const bet_id = String(upstreamData.bet_id || upstreamData.id);
+    const order_id = String(upstreamData.order_id);
 
     // Normalize status
     const status = normalizeStatus(upstreamData.status);
 
+    // Helper to extract numeric value from number or ["CCY", number] format
+    function extractValue(val) {
+        if (typeof val === 'number') {
+            return val;
+        }
+        if (Array.isArray(val) && val.length === 2) {
+            return val[1];  // ["USD", 2.0] → 2.0
+        }
+        return 0;
+    }
+
     // Normalize price and stake
     const price = upstreamData.got_price !== undefined ? upstreamData.got_price : upstreamData.price;
-    const stake = upstreamData.got_stake !== undefined ? upstreamData.got_stake : upstreamData.stake;
+    const stake = upstreamData.got_stake !== undefined ? extractValue(upstreamData.got_stake) : upstreamData.stake;
+    const want_stake = upstreamData.want_stake !== undefined ? extractValue(upstreamData.want_stake) : stake;
 
     // Normalize matched fields
     const matched_price = upstreamData.got_price !== undefined ? upstreamData.got_price : upstreamData.matched_price;
-    const matched_stake = upstreamData.got_stake !== undefined ? upstreamData.got_stake : upstreamData.matched_stake;
+    const matched_stake = stake;  // got_stake is already extracted
     const unmatched_stake = upstreamData.unmatched_stake !== undefined ? upstreamData.unmatched_stake : 0;
 
     // Parse timestamps
