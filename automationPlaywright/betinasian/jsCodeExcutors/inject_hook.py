@@ -115,10 +115,20 @@ async def inject_websocket_hook(
             ('wsDataRegistor/core/pmm_query.js', 'PMM Query'),
             ('wsDataRegistor/core/pmm_handler.js', 'PMM Handler'),
 
+            # Order & Bet 模块
+            ('wsDataRegistor/core/order_adapter.js', 'Order Adapter'),
+            ('wsDataRegistor/core/bet_adapter.js', 'Bet Adapter'),
+            ('wsDataRegistor/core/order_state_machine.js', 'Order State Machine'),
+            ('wsDataRegistor/core/order_store.js', 'Order Store'),
+            ('wsDataRegistor/core/bet_store.js', 'Bet Store'),
+            ('wsDataRegistor/core/order_query.js', 'Order Query'),
+
             # 第2层: Handler 模块
             ('wsDataRegistor/handlers/event_handler.js', 'Event Handler'),
             ('wsDataRegistor/handlers/offers_handler.js', 'Offers Handler'),
             ('wsDataRegistor/handlers/api_handler.js', 'API Handler'),
+            ('wsDataRegistor/handlers/order_handler.js', 'Order Handler'),
+            ('wsDataRegistor/handlers/bet_handler.js', 'Bet Handler'),
 
             # 第3层: Router 和 Query Engine
             ('wsDataRegistor/message_router.js', 'Message Router'),
@@ -160,7 +170,14 @@ async def inject_websocket_hook(
             'Watch Manager': 'window.__watchManager',
             'Subscription Manager': 'window.__subscriptionManager',
             'PMM Store': 'window.pmmStore',
-            'PMM Handler': 'window.__pmmHandler'
+            'PMM Handler': 'window.__pmmHandler',
+            'Order Adapter': 'window.orderAdapter',
+            'Bet Adapter': 'window.betAdapter',
+            'Order Store': 'window.orderStore',
+            'Bet Store': 'window.betStore',
+            'Order State Machine': 'window.orderStateMachine',
+            'Order Handler': 'window.__orderHandler',
+            'Bet Handler': 'window.__betHandler'
         }
 
         all_ok = True

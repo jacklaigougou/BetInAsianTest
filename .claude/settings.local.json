@@ -21,7 +21,8 @@
       "Bash(move soccer.py soccer/)",
       "Bash(findstr /i \"CreateBetslip\")",
       "Bash(findstr /i \"create_betslip\")",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(del \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\automationPlaywright\\betinasian\\operations\\PlaceOrder.py\")"
     ],
     "deny": [],
     "ask": []

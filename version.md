@@ -43,3 +43,6 @@ betslip http
 
 # v1.0.13
 BGP 下单金额和盘口确认完成
+
+# v1.0.14
+下单order bet 的聚合器和状态机

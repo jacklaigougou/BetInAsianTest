@@ -247,18 +247,18 @@ async def main():
 
                 # 测试数据: 简单的 Money Line 投注
                 logger.info("\n📋 测试数据:")
-                event_id = "2026-01-07,35064,64397"
-                bet_type = "for,a"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
+                event_id = "2026-01-07,41031,50205"
+                bet_type = "for,ml,h"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
                 logger.info(f"  - Event ID: {event_id}")
                 logger.info(f"  - Bet Type: {bet_type} (Away)")
-                logger.info(f"  - Sport: fb")
+                logger.info(f"  - Sport: basket")
 
                 betslip_result = None  # 初始化变量
 
                 try:
                     betslip_result = await create_betslip(
                         page=target_page,
-                        sport="fb",
+                        sport="basket",
                         event_id=event_id,
                         bet_type=bet_type
                     )
@@ -410,6 +410,79 @@ async def main():
 
                         except Exception as e:
                             logger.error(f"❌ GetPrice 测试失败: {e}", exc_info=True)
+
+                        # ========== 测试 PlaceOrder 功能 ==========
+                        if price_result and price_result.get('success'):
+                            logger.info("\n" + "="*60)
+                            logger.info("🧪 测试 PlaceOrder 功能")
+                            logger.info("="*60)
+
+                            from automationPlaywright.betinasian.jsCodeExcutors import place_order
+
+                            # 直接从 Store 获取最高价格 (不过滤 required_amount)
+                            highest_price_data = await target_page.evaluate(
+                                f'''
+                                () => {{
+                                    const betslip = window.pmmStore.store.get("{betslip_id}");
+                                    if (!betslip) return null;
+
+                                    let highestPrice = 0;
+                                    let highestBookie = null;
+
+                                    for (const [bookie, data] of betslip.bookies) {{
+                                        if (data.status.code === 'success' && data.top_price > highestPrice) {{
+                                            highestPrice = data.top_price;
+                                            highestBookie = bookie;
+                                        }}
+                                    }}
+
+                                    return {{
+                                        price: highestPrice,
+                                        bookie: highestBookie
+                                    }};
+                                }}
+                                '''
+                            )
+
+                            best_price = highest_price_data.get('price') if highest_price_data else None
+                            best_bookie = highest_price_data.get('bookie') if highest_price_data else None
+
+                            if not best_price:
+                                logger.error("❌ 无法获取最高价格,跳过下单")
+                            else:
+                                logger.info(f"\n📋 下单参数:")
+                                logger.info(f"  - Betslip ID: {betslip_id}")
+                                logger.info(f"  - Price: {best_price} (来自 {best_bookie} 的最高价格)")
+                                logger.info(f"  - Stake: 1 USD")
+                                logger.info(f"  - Duration: 10 seconds")
+
+                                try:
+                                    order_result = await place_order(
+                                        page=target_page,
+                                        betslip_id=betslip_id,
+                                        price=best_price,
+                                        stake=1,
+                                        currency="USD",
+                                        duration=10
+                                    )
+
+                                    # 显示结果
+                                    logger.info("\n📊 PlaceOrder 结果:")
+                                    logger.info(f"  - 成功: {order_result.get('success')}")
+                                    logger.info(f"  - 状态码: {order_result.get('status')}")
+
+                                    if order_result.get('success'):
+                                        logger.info(f"  - 响应数据:")
+                                        logger.info(json.dumps(order_result.get('data'), indent=4, ensure_ascii=False))
+                                    else:
+                                        logger.error(f"  - 错误: {order_result.get('error')}")
+
+                                except Exception as e:
+                                    logger.error(f"❌ PlaceOrder 测试失败: {e}", exc_info=True)
+
+                            logger.info("\n" + "="*60)
+                            logger.info("🧪 PlaceOrder 测试完成")
+                            logger.info("="*60 + "\n")
 
                         # ========== 测试按赔率查询总金额功能 ==========
                         logger.info("\n" + "="*60)
