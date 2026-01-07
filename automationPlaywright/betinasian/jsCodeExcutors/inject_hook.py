@@ -110,6 +110,11 @@ async def inject_websocket_hook(
             ('wsDataRegistor/core/watch_manager.js', 'Watch Manager'),
             ('wsDataRegistor/core/subscription_manager.js', 'Subscription Manager'),
 
+            # PMM (Price Match Message) 模块
+            ('wsDataRegistor/core/pmm_store.js', 'PMM Store'),
+            ('wsDataRegistor/core/pmm_query.js', 'PMM Query'),
+            ('wsDataRegistor/core/pmm_handler.js', 'PMM Handler'),
+
             # 第2层: Handler 模块
             ('wsDataRegistor/handlers/event_handler.js', 'Event Handler'),
             ('wsDataRegistor/handlers/offers_handler.js', 'Offers Handler'),
@@ -153,7 +158,9 @@ async def inject_websocket_hook(
             'Offers Hcap Manager': 'window.__offersHcapManager',
             'Offers Event Manager': 'window.__offersEventManager',
             'Watch Manager': 'window.__watchManager',
-            'Subscription Manager': 'window.__subscriptionManager'
+            'Subscription Manager': 'window.__subscriptionManager',
+            'PMM Store': 'window.pmmStore',
+            'PMM Handler': 'window.__pmmHandler'
         }
 
         all_ok = True

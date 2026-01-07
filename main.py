@@ -247,16 +247,18 @@ async def main():
 
                 # 测试数据: 简单的 Money Line 投注
                 logger.info("\n📋 测试数据:")
-                event_id = "2026-01-06,63025,40954"
-                bet_type = "for,ml,a"
+                event_id = "2026-01-07,35064,64397"
+                bet_type = "for,a"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
                 logger.info(f"  - Event ID: {event_id}")
-                logger.info(f"  - Bet Type: {bet_type} (Money Line - Away)")
-                logger.info(f"  - Sport: basket")
+                logger.info(f"  - Bet Type: {bet_type} (Away)")
+                logger.info(f"  - Sport: fb")
+
+                betslip_result = None  # 初始化变量
 
                 try:
                     betslip_result = await create_betslip(
                         page=target_page,
-                        sport="basket",
+                        sport="fb",
                         event_id=event_id,
                         bet_type=bet_type
                     )
@@ -275,10 +277,184 @@ async def main():
 
                 except Exception as e:
                     logger.error(f"❌ CreateBetslip 测试失败: {e}", exc_info=True)
+                    betslip_result = {'success': False}
 
                 logger.info("\n" + "="*60)
                 logger.info("🧪 CreateBetslip 测试完成")
                 logger.info("="*60 + "\n")
+
+                # ========== 测试 GetPrice 功能 ==========
+                if betslip_result and betslip_result.get('success'):
+                    logger.info("\n" + "="*60)
+                    logger.info("🧪 测试 GetPrice 功能")
+                    logger.info("="*60)
+
+                    from automationPlaywright.betinasian.operations.GetPrice import get_price_by_betslip_id, get_pmm_stats
+
+                    # 检查 PMM 模块是否加载
+                    logger.info("\n🔍 检查 PMM 模块...")
+                    pmm_check = await target_page.evaluate("""
+                        () => {
+                            return {
+                                pmmStore: typeof window.pmmStore !== 'undefined',
+                                pmmHandler: typeof window.__pmmHandler !== 'undefined',
+                                queryBetslipById: typeof window.queryData?.queryBetslipById === 'function',
+                                getTotalAmountAtPrice: typeof window.queryData?.getTotalAmountAtPrice === 'function'
+                            };
+                        }
+                    """)
+                    logger.info(f"PMM 模块状态: {json.dumps(pmm_check, indent=2)}")
+
+                    if not pmm_check.get('pmmStore'):
+                        logger.error("❌ PMM Store 未加载！请检查 JS 文件是否正确注入。")
+                        logger.info("提示：PMM 模块文件应该在 jsCode/wsDataRegistor/core/ 目录下")
+
+                    # 提取 betslip_id (字段名是 betslip_id 不是 id)
+                    # Debug: 打印完整结构
+                    logger.info(f"\n🔍 调试 betslip_result 结构:")
+                    logger.info(f"  - betslip_result keys: {list(betslip_result.keys())}")
+                    logger.info(f"  - betslip_result['data'] keys: {list(betslip_result.get('data', {}).keys())}")
+                    logger.info(f"  - betslip_result['data']['data'] exists: {'data' in betslip_result.get('data', {})}")
+
+                    # 尝试两种可能的路径
+                    betslip_id = betslip_result.get('data', {}).get('betslip_id')
+                    if not betslip_id:
+                        # 可能有嵌套的 data 字段
+                        betslip_id = betslip_result.get('data', {}).get('data', {}).get('betslip_id')
+
+                    if not betslip_id:
+                        logger.error("❌ 无法获取 betslip_id，跳过 GetPrice 测试")
+                        logger.error(f"betslip_result: {json.dumps(betslip_result, indent=2, ensure_ascii=False)}")
+                    else:
+                        logger.info(f"\n✅ Betslip ID: {betslip_id}")
+
+                        # 等待 PMM 数据到达
+                        logger.info("\n⏳ 等待 PMM 数据...")
+                        await asyncio.sleep(3)
+
+                        # 查看 PMM 统计
+                        logger.info("\n📊 PMM 统计信息:")
+                        stats = await get_pmm_stats(target_page)
+                        logger.info(json.dumps(stats, indent=2))
+
+                        # 先查看原始 PMM 数据
+                        logger.info(f"\n🔍 查看原始 PMM 数据...")
+
+                        # 1. 查看 Store 中的原始数据
+                        raw_store_data = await target_page.evaluate(
+                            f'''
+                            () => {{
+                                const betslip = window.pmmStore.store.get("{betslip_id}");
+                                if (!betslip) return null;
+
+                                // Convert Map to Object for JSON serialization
+                                const bookiesObj = {{}};
+                                for (const [key, value] of betslip.bookies) {{
+                                    bookiesObj[key] = value;
+                                }}
+
+                                return {{
+                                    ...betslip,
+                                    bookies: bookiesObj
+                                }};
+                            }}
+                            '''
+                        )
+
+                        if raw_store_data:
+                            logger.info(f"✅ Store 中的 betslip 数据:")
+                            logger.info(f"  - Event ID: {raw_store_data.get('event_id')}")
+                            logger.info(f"  - Bet Type: {raw_store_data.get('bet_type')}")
+                            logger.info(f"  - Bookies count: {len(raw_store_data.get('bookies', {}))}")
+                            logger.info(f"  - Bookies keys: {list(raw_store_data.get('bookies', {}).keys())}")
+
+                            # 显示每个 bookie 的详细信息
+                            for bookie, data in raw_store_data.get('bookies', {}).items():
+                                logger.info(f"\n  [{bookie}]:")
+                                logger.info(f"    - Status: {data.get('status')}")
+                                logger.info(f"    - Top price: {data.get('top_price')}")
+                                logger.info(f"    - Top available: {data.get('top_available')}")
+                                logger.info(f"    - Price Tiers: {len(data.get('price_tiers', []))} tiers")
+                                for i, tier in enumerate(data.get('price_tiers', [])[:3]):
+                                    logger.info(f"      Tier {i+1}: price={tier.get('price')}, min={tier.get('min')}, max={tier.get('max')}")
+                        else:
+                            logger.error("❌ Store 中未找到 betslip 数据!")
+
+                        # 获取最优价格 (使用 betslip_id 查询)
+                        logger.info(f"\n🔍 获取最优价格 (by betslip_id)...")
+                        logger.info(f"  - Betslip ID: {betslip_id}")
+
+                        try:
+                            price_result = await get_price_by_betslip_id(
+                                page=target_page,
+                                betslip_id=betslip_id,
+                                required_amount=10.0,
+                                required_currency="GBP"
+                            )
+
+                            # 显示结果
+                            logger.info("\n📊 GetPrice 结果:")
+                            logger.info(f"  - 成功: {price_result.get('success')}")
+
+                            if price_result.get('success'):
+                                logger.info(f"  - Betslip ID: {price_result.get('betslip_id')}")
+                                logger.info(f"  - Event ID: {price_result.get('event_id')}")
+                                logger.info(f"  - Bet Type: {price_result.get('bet_type')}")
+                                logger.info(f"  - Bookie: {price_result.get('bookie')}")
+                                logger.info(f"  - Price: {price_result.get('price')}")
+                                logger.info(f"  - Available: {price_result.get('available')}")
+                                logger.info(f"  - Updated At: {price_result.get('updated_at')}")
+                                logger.info(f"  - Total Bookies: {price_result.get('all_bookies')}")
+                            else:
+                                logger.warning(f"  - Reason: {price_result.get('reason')}")
+
+                        except Exception as e:
+                            logger.error(f"❌ GetPrice 测试失败: {e}", exc_info=True)
+
+                        # ========== 测试按赔率查询总金额功能 ==========
+                        logger.info("\n" + "="*60)
+                        logger.info("🧪 测试按赔率查询总金额功能")
+                        logger.info("="*60)
+
+                        from automationPlaywright.betinasian.operations.GetPrice import get_total_amount_at_price
+
+                        # 测试目标赔率 (根据实际价格范围)
+                        target_prices = [1.2, 1.15, 1.1,1.0]
+
+                        for target_price in target_prices:
+                            logger.info(f"\n🎯 查询赔率 >= {target_price} 的总金额...")
+
+                            try:
+                                amount_result = await get_total_amount_at_price(
+                                    page=target_page,
+                                    event_id=event_id,
+                                    bet_type=bet_type,
+                                    target_price=target_price,
+                                    required_currency="GBP"
+                                )
+
+                                if amount_result.get('success'):
+                                    logger.info(f"✅ 找到可下单金额:")
+                                    logger.info(f"  - 目标赔率: >= {amount_result.get('target_price')}")
+                                    logger.info(f"  - 总金额: {amount_result.get('total_amount')} {amount_result.get('currency')}")
+                                    logger.info(f"  - Bookie 数量: {amount_result.get('bookie_count')}")
+
+                                    logger.info(f"\n  📋 各 Bookie 明细:")
+                                    for bookie_data in amount_result.get('bookies', []):
+                                        logger.info(f"\n  [{bookie_data.get('bookie')}]:")
+                                        logger.info(f"    - 小计: {bookie_data.get('total_amount')} {bookie_data.get('currency')}")
+                                        logger.info(f"    - 价格层级:")
+                                        for tier in bookie_data.get('tiers', []):
+                                            logger.info(f"      · 赔率 {tier['price']}: {tier['amount']} (最小: {tier['min']})")
+                                else:
+                                    logger.warning(f"⚠️ 未找到符合条件的金额: {amount_result.get('reason')}")
+
+                            except Exception as e:
+                                logger.error(f"❌ 查询失败: {e}", exc_info=True)
+
+                        logger.info("\n" + "="*60)
+                        logger.info("🧪 GetPrice 测试完成")
+                        logger.info("="*60 + "\n")
 
                 # 进入死循环，保持程序运行
                 logger.info("\n✓ 初始化完成，程序进入运行状态...")

@@ -25,6 +25,26 @@
         }
     }
 
+    // PMM module dependencies (optional, will be added later)
+    const pmmDependencies = [
+        'pmmStore',
+        '__pmmHandler'
+    ];
+
+    let pmmAvailable = true;
+    for (const dep of pmmDependencies) {
+        if (!window[dep]) {
+            pmmAvailable = false;
+            break;
+        }
+    }
+
+    if (pmmAvailable) {
+        console.log('[DataRegistor] PMM module available');
+    } else {
+        console.warn('[DataRegistor] PMM module not available (will be loaded separately)');
+    }
+
     // ========== 全局 API: 注册消息 ==========
 
     /**
@@ -68,7 +88,13 @@
 
     // ========== 全局 API: 查询数据 ==========
 
+    // 保留已存在的 PMM 函数 (如果已经加载了 pmm_query.js)
+    const existingPmmFunctions = window.queryData || {};
+
     window.queryData = {
+        // 保留之前加载的 PMM 函数
+        ...existingPmmFunctions,
+
         // ===== Event 查询 =====
 
         // 按 ID

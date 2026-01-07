@@ -40,3 +40,6 @@ betburger 到 betinisian 的映射做完,竟然如此丝滑
 
 # v1.0.12
 betslip http 
+
+# v1.0.13
+BGP 下单金额和盘口确认完成
