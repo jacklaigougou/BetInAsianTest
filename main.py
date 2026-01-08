@@ -174,25 +174,11 @@ async def main():
                 # 构造测试消息
                 test_dispatch_message = {
                     'spider_sport_type': 'basket',
-                    'spider_home': 'dubai',
-                    'spider_away': 'fenerbahce',
+                    'spider_home': 'bakken bears',
+                    'spider_away': 'svendborg',
                     'spider_market_id': '17',        # Asian Handicap - Home
-                    'spider_handicap_value': -10    # 让分 -5.5
+                    'spider_handicap_value': -6.5    # 让分 -5.5
                 }
-
-                
-
-                # 打印实际的 WebSocket 消息样本
-                logger.info("\n📡 检查实际收到的 WebSocket 消息...")
-                sample_messages = await automation.page.evaluate('window.__offersHandler.recentMessages.slice(-5)')
-
-                if sample_messages and len(sample_messages) > 0:
-                    logger.info(f"找到 {len(sample_messages)} 条 offers 消息")
-                    logger.info(f"\n第一条消息的数据结构:")
-                    import json
-                    logger.info(json.dumps(sample_messages[0], indent=2, ensure_ascii=False))
-                else:
-                    logger.warning("⚠️ 未找到 offers 消息")
 
                 # 调用 GetOdd
                 logger.info("\n🔍 开始获取赔率...")

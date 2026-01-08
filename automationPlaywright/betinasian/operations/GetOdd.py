@@ -9,7 +9,7 @@ from utils.matchGameName import fuzzy_match_teams
 from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets
 from ..MappingBetburgerToBetinisian import build_bet_type_from_spider
 from ..jsCodeExcutors.http_executors import create_betslip
-from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id
+from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id, wait_for_pmm_ready
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,8 @@ async def sport_type_to_betinasian_sport_type(
 async def GetOdd(
     self,
     dispatch_message: Dict[str, Any],
+    required_amount: float = 10.0,
+    required_currency: str = "GBP",
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -134,6 +136,8 @@ async def GetOdd(
                 'spider_market_id': '17',                # Spider market ID
                 'spider_handicap_value': -5.5            # 让分值 (可选)
             }
+            required_amount: 所需投注金额 (默认: 10.0)
+            required_currency: 所需货币 (默认: "GBP")
             **kwargs: 额外参数
 
         Returns:
@@ -164,7 +168,8 @@ async def GetOdd(
             ...         'spider_away': 'Chelsea',
             ...         'spider_market_id': '17',
             ...         'spider_handicap_value': -5.5
-            ...     }
+            ...     },
+            ...     required_amount=20.0  # 自定义投注金额
             ... )
             >>> result['success']
             True
@@ -280,15 +285,40 @@ async def GetOdd(
     logger.info(f"📋 Betslip ID: {betslip_id}")
 
     # 8. 等待 PMM 数据到达并获取最佳赔率
-    logger.info(f"⏳ 等待 PMM 数据...")
-    await asyncio.sleep(3)  # 等待 3 秒让 PMM 数据到达
+    logger.info(f"⏳ 等待 PMM 数据准备...")
 
+    # 使用智能等待机制：等待 PMM 数据稳定且满足执行条件
+    wait_result = await wait_for_pmm_ready(
+        page=self.page,
+        betslip_id=betslip_id,
+        required_amount=required_amount,
+        required_currency=required_currency,
+        poll_interval=50,      # 轮询间隔 50ms
+        stable_ms=300,         # 稳定时间 300ms
+        total_timeout=4000,    # 总超时 4 秒
+        min_updates=1          # 最少更新次数
+    )
+
+    # 检查等待结果
+    if not wait_result.get('ready'):
+        logger.warning(f"⚠️ PMM 数据未准备好: {wait_result.get('reason')}, "
+                      f"耗时={wait_result.get('elapsed')}ms, "
+                      f"更新次数={wait_result.get('update_count')}")
+    else:
+        logger.info(f"✅ PMM 数据已准备 (耗时={wait_result.get('elapsed')}ms, "
+                   f"更新={wait_result.get('update_count')}次, "
+                   f"稳定={wait_result.get('stable_duration')}ms, "
+                   f"最佳价格={wait_result.get('best_price')}, "
+                   f"庄家={wait_result.get('best_bookie')}, "
+                   f"可用金额={wait_result.get('best_amount')})")
+
+    # 获取最佳赔率
     logger.info(f"🔍 获取最佳赔率...")
     best_price_result = await get_price_by_betslip_id(
         page=self.page,
         betslip_id=betslip_id,
-        required_amount=10.0,
-        required_currency="GBP"
+        required_amount=required_amount,
+        required_currency=required_currency
     )
 
     # 9. 返回完整结果

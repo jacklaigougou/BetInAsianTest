@@ -92,8 +92,8 @@ async function(betData) {{
 
         # Process result
         if result.get('success'):
-            logger.info(f"✅ Betslip created successfully: status={result.get('status')}")
-            logger.info(f"Response data: {json.dumps(result.get('data'), indent=2)}")
+            betslip_id = result.get('data', {}).get('betslip_id')
+            logger.info(f"✅ Betslip created successfully: betslip_id={betslip_id}, status={result.get('status')}")
 
             return {
                 'success': True,

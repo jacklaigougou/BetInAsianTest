@@ -229,6 +229,129 @@ function queryByBookie(bookie) {
 }
 
 /**
+ * Wait for PMM data to be ready
+ *
+ * Returns a Promise that resolves when PMM data is stable and ready to use.
+ * Python side can await page.evaluate() to wait for this Promise.
+ *
+ * @param {string} betslip_id - Betslip ID
+ * @param {number} requiredAmount - Required stake amount (default: 10)
+ * @param {string} requiredCurrency - Required currency (default: "GBP")
+ * @param {Object} options - Configuration options
+ * @param {number} options.pollInterval - Polling interval in ms (default: 50)
+ * @param {number} options.stableMs - Stable duration in ms (default: 400)
+ * @param {number} options.totalTimeout - Total timeout in ms (default: 4000)
+ * @param {number} options.minUpdates - Minimum update count (default: 2)
+ * @returns {Promise<Object>} Wait result
+ */
+async function waitForPMMReady(betslip_id, requiredAmount = 10, requiredCurrency = 'GBP', options = {}) {
+    const {
+        pollInterval = 50,      // 轮询间隔 50ms
+        stableMs = 300,         // 稳定时间 300ms
+        totalTimeout = 4000,    // 总超时 4 秒
+        minUpdates = 1          // 最少更新次数（改为 1，避免单次推送卡死）
+    } = options;
+
+    const startTime = Date.now();
+    let lastSignature = null;
+    let stableStartTime = null;
+    let updateCount = 0;
+
+    return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+
+            // 超时检查
+            if (elapsed > totalTimeout) {
+                clearInterval(checkInterval);
+                resolve({
+                    ready: false,
+                    reason: 'timeout',
+                    elapsed: elapsed,
+                    update_count: updateCount
+                });
+                return;
+            }
+
+            // 查询 betslip
+            const betslip = queryBetslipById(betslip_id);
+
+            // 检查 betslip 是否存在
+            if (!betslip) {
+                // 重置稳定计时
+                lastSignature = null;
+                stableStartTime = null;
+                return;
+            }
+
+            // ===== 关键改进：检查 best_executable 是否满足要求 =====
+            const executable = betslip.best_executable;
+
+            // 如果没有可执行赔率，继续等待（不计入稳定）
+            if (!executable) {
+                lastSignature = null;
+                stableStartTime = null;
+                return;
+            }
+
+            // 检查货币是否匹配
+            if (executable.available?.currency !== requiredCurrency) {
+                lastSignature = null;
+                stableStartTime = null;
+                return;
+            }
+
+            // 检查金额是否满足
+            const availableAmount = executable.available?.amount || 0;
+            if (availableAmount < requiredAmount) {
+                lastSignature = null;
+                stableStartTime = null;
+                return;
+            }
+
+            // ===== 计算当前签名（用于判断是否稳定） =====
+            const currentSignature = JSON.stringify({
+                best_price: executable.price,
+                best_amount: availableAmount,
+                bookie: executable.bookie,
+                bookie_count: betslip.bookies.size
+            });
+
+            // 检测变化
+            if (currentSignature !== lastSignature) {
+                updateCount++;
+                lastSignature = currentSignature;
+                stableStartTime = Date.now();
+                return;
+            }
+
+            // 检查是否稳定
+            if (stableStartTime) {
+                const stableDuration = Date.now() - stableStartTime;
+
+                // 满足条件：稳定时间足够 且 更新次数足够
+                // 或者：稳定时间超过 2 倍（给单次推送一个出路）
+                if ((stableDuration >= stableMs && updateCount >= minUpdates) ||
+                    (stableDuration >= stableMs * 2)) {
+                    clearInterval(checkInterval);
+                    resolve({
+                        ready: true,
+                        elapsed: elapsed,
+                        update_count: updateCount,
+                        stable_duration: stableDuration,
+                        has_executable: true,
+                        has_odds: betslip.best_odds !== null,
+                        best_price: executable.price,
+                        best_bookie: executable.bookie,
+                        best_amount: availableAmount
+                    });
+                }
+            }
+        }, pollInterval);
+    });
+}
+
+/**
  * Get total available amount at or above target price
  *
  * @param {string} event_id - Event ID
@@ -338,5 +461,6 @@ window.queryData.getAllPrices = getAllPrices;
 window.queryData.getTotalAmountAtPrice = getTotalAmountAtPrice;
 window.queryData.pmmByEvent = queryByEvent;
 window.queryData.pmmByBookie = queryByBookie;
+window.queryData.waitForPMMReady = waitForPMMReady;  // Wait for PMM data to be ready
 
 console.log('[PMM Query] Initialized and mounted to window.queryData');
