@@ -20,7 +20,7 @@ from .PlaceOrder import (
     place_order
 )
 
-from .GetOrder import (
+from .queries.orders.get_order import (
     get_order_by_id,
     get_orders_by_status,
     get_orders_by_event,

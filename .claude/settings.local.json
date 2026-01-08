@@ -22,7 +22,13 @@
       "Bash(findstr /i \"CreateBetslip\")",
       "Bash(findstr /i \"create_betslip\")",
       "Bash(findstr:*)",
-      "Bash(del \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\automationPlaywright\\betinasian\\operations\\PlaceOrder.py\")"
+      "Bash(del \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\automationPlaywright\\betinasian\\operations\\PlaceOrder.py\")",
+      "Bash(move order_adapter.js orders )",
+      "Bash(move order_store.js orders )",
+      "Bash(move order_query.js orders )",
+      "Bash(move order_state_machine.js orders )",
+      "Bash(move bet_adapter.js orders )",
+      "Bash(move bet_store.js orders)"
     ],
     "deny": [],
     "ask": []

@@ -171,7 +171,7 @@ async def main():
                         logger.warning("⚠ 未找到正在进行的篮球比赛")
                 except Exception as e:
                     logger.error(f"查询篮球比赛失败: {e}")
-
+                
                 logger.info("="*60 + "\n")
 
                 # ========== 测试 GetOdd 功能 ==========
@@ -235,7 +235,9 @@ async def main():
                 logger.info("\n" + "="*60)
                 logger.info("🧪 GetOdd 测试完成")
                 logger.info("="*60 + "\n")
-
+                
+                
+                return
                 # ========== 测试 CreateBetslip 功能 ==========
                 # 不依赖 GetOdd 结果，直接测试
                 logger.info("\n" + "="*60)
@@ -417,7 +419,7 @@ async def main():
                             logger.info("🧪 测试 PlaceOrder 功能")
                             logger.info("="*60)
 
-                            from automationPlaywright.betinasian.jsCodeExcutors import place_order
+                            from automationPlaywright.betinasian.jsCodeExcutors.PlaceOrder import place_order
 
                             # 直接从 Store 获取最高价格 (不过滤 required_amount)
                             highest_price_data = await target_page.evaluate(
@@ -486,7 +488,7 @@ async def main():
                                     logger.info("🧪 测试 GetOrder 功能 - 查询下单结果")
                                     logger.info("="*60)
 
-                                    from automationPlaywright.betinasian.jsCodeExcutors import (
+                                    from automationPlaywright.betinasian.jsCodeExcutors.queries.orders.get_order import (
                                         get_order_by_id,
                                         get_order_with_bets,
                                         check_order_slippage

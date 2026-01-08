@@ -5,7 +5,7 @@ BetInAsian 获取赔率
 from typing import Dict, Any
 import logging
 from utils.matchGameName import fuzzy_match_teams
-from ..jsCodeExcutors.query import query_betinasian_events, query_active_markets
+from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,13 @@ async def get_event_key_by_team_name(
         in_running_only=True
     )
 
-    if not events:
-        return {
-            'success': False,
-            'message': f'未找到 {spider_sport_type} 正在进行的比赛'
-        }
+    # if not events:
+    #     return {
+    #         'success': False,
+    #         'message': f'未找到 {spider_sport_type} 正在进行的比赛'
+    #     }
 
-    logger.info(f"从 betinasian 获取到 {len(events)} 场比赛")
+    # logger.info(f"从 betinasian 获取到 {len(events)} 场比赛")
 
     # 3. 模糊匹配
     match_result = fuzzy_match_teams(

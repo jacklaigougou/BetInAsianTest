@@ -100,28 +100,32 @@ async def inject_websocket_hook(
 
         # 定义加载顺序 (按依赖关系)
         registor_files = [
-            # 第1层: Core 存储模块
-            ('wsDataRegistor/core/events_store.js', 'Events Store'),
-            ('wsDataRegistor/core/offers_hcap_store.js', 'Offers Hcap Store'),
-            ('wsDataRegistor/core/offers_event_store.js', 'Offers Event Store'),
-            ('wsDataRegistor/core/events_manager.js', 'Events Manager'),
-            ('wsDataRegistor/core/offers_hcap_manager.js', 'Offers Hcap Manager'),
-            ('wsDataRegistor/core/offers_event_manager.js', 'Offers Event Manager'),
-            ('wsDataRegistor/core/watch_manager.js', 'Watch Manager'),
-            ('wsDataRegistor/core/subscription_manager.js', 'Subscription Manager'),
+            # 第1层: Events 模块
+            ('wsDataRegistor/core/events/events_store.js', 'Events Store'),
+            ('wsDataRegistor/core/events/events_manager.js', 'Events Manager'),
+
+            # Offers 模块
+            ('wsDataRegistor/core/offers/offers_hcap_store.js', 'Offers Hcap Store'),
+            ('wsDataRegistor/core/offers/offers_event_store.js', 'Offers Event Store'),
+            ('wsDataRegistor/core/offers/offers_hcap_manager.js', 'Offers Hcap Manager'),
+            ('wsDataRegistor/core/offers/offers_event_manager.js', 'Offers Event Manager'),
+
+            # Managers 模块
+            ('wsDataRegistor/core/managers/watch_manager.js', 'Watch Manager'),
+            ('wsDataRegistor/core/managers/subscription_manager.js', 'Subscription Manager'),
 
             # PMM (Price Match Message) 模块
-            ('wsDataRegistor/core/pmm_store.js', 'PMM Store'),
-            ('wsDataRegistor/core/pmm_query.js', 'PMM Query'),
-            ('wsDataRegistor/core/pmm_handler.js', 'PMM Handler'),
+            ('wsDataRegistor/core/pmm/pmm_store.js', 'PMM Store'),
+            ('wsDataRegistor/core/pmm/pmm_query.js', 'PMM Query'),
+            ('wsDataRegistor/core/pmm/pmm_handler.js', 'PMM Handler'),
 
             # Order & Bet 模块
-            ('wsDataRegistor/core/order_adapter.js', 'Order Adapter'),
-            ('wsDataRegistor/core/bet_adapter.js', 'Bet Adapter'),
-            ('wsDataRegistor/core/order_state_machine.js', 'Order State Machine'),
-            ('wsDataRegistor/core/order_store.js', 'Order Store'),
-            ('wsDataRegistor/core/bet_store.js', 'Bet Store'),
-            ('wsDataRegistor/core/order_query.js', 'Order Query'),
+            ('wsDataRegistor/core/orders/order_adapter.js', 'Order Adapter'),
+            ('wsDataRegistor/core/orders/bet_adapter.js', 'Bet Adapter'),
+            ('wsDataRegistor/core/orders/order_state_machine.js', 'Order State Machine'),
+            ('wsDataRegistor/core/orders/order_store.js', 'Order Store'),
+            ('wsDataRegistor/core/orders/bet_store.js', 'Bet Store'),
+            ('wsDataRegistor/core/orders/order_query.js', 'Order Query'),
 
             # 第2层: Handler 模块
             ('wsDataRegistor/handlers/event_handler.js', 'Event Handler'),
