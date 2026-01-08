@@ -177,7 +177,7 @@ async def main():
                     'spider_home': 'dubai',
                     'spider_away': 'fenerbahce',
                     'spider_market_id': '17',        # Asian Handicap - Home
-                    'spider_handicap_value': -4    # 让分 -5.5
+                    'spider_handicap_value': -10    # 让分 -5.5
                 }
 
                 
@@ -198,9 +198,66 @@ async def main():
                 logger.info("\n🔍 开始获取赔率...")
                 odd_result = await automation.GetOdd(test_dispatch_message)
 
-                
-                
-                
+                # 显示结果
+                logger.info("\n📊 GetOdd 结果:")
+                if odd_result:
+                    logger.info(f"  - 成功: {odd_result.get('success')}")
+
+                    if odd_result.get('success'):
+                        logger.info(f"\n  📌 基本信息:")
+                        logger.info(f"    - Event ID: {odd_result.get('event_id')}")
+                        logger.info(f"    - Event Key: {odd_result.get('event_key')}")
+                        logger.info(f"    - Bet Type: {odd_result.get('bet_type')}")
+                        logger.info(f"    - Betslip ID: {odd_result.get('betslip_id')}")
+
+                        # Betslip 结果
+                        betslip_result = odd_result.get('betslip_result', {})
+                        logger.info(f"\n  📋 Betslip 创建结果:")
+                        logger.info(f"    - 成功: {betslip_result.get('success')}")
+                        logger.info(f"    - 状态码: {betslip_result.get('status')}")
+
+                        # 最佳赔率信息 (新增)
+                        best_price = odd_result.get('best_price', {})
+                        logger.info(f"\n  💰 最佳赔率:")
+                        if best_price.get('success'):
+                            logger.info(f"    - Bookie: {best_price.get('bookie')}")
+                            logger.info(f"    - Price: {best_price.get('price')}")
+                            available = best_price.get('available')
+                            if available:
+                                logger.info(f"    - Available: {available.get('amount')} {available.get('currency')}")
+                            else:
+                                logger.info(f"    - Available: N/A")
+                            logger.info(f"    - Updated At: {best_price.get('updated_at')}")
+                        else:
+                            logger.warning(f"    - 未找到可执行赔率: {best_price.get('reason')}")
+                            if best_price.get('best_odds'):
+                                logger.info(f"    - 最高赔率(不可执行): {best_price.get('best_odds')}")
+
+                        # 匹配信息
+                        match_info = odd_result.get('match_info', {})
+                        logger.info(f"\n  🎯 匹配信息:")
+                        logger.info(f"    - 匹配类型: {match_info.get('match_type')}")
+                        logger.info(f"    - 匹配分数: {match_info.get('score')}")
+
+                        # 显示完整的 event 信息
+                        event = match_info.get('event', {})
+                        logger.info(f"\n  🏀 Event 详情:")
+                        logger.info(f"    - 主队: {event.get('home')}")
+                        logger.info(f"    - 客队: {event.get('away')}")
+                        logger.info(f"    - 联赛: {event.get('competition_name')}")
+                        logger.info(f"    - 运动: {event.get('sport')}")
+                        logger.info(f"    - 是否进行中: {event.get('isInRunning')}")
+                    else:
+                        logger.error(f"  ❌ 错误信息: {odd_result.get('message')}")
+                else:
+                    logger.warning("  ⚠️ GetOdd 返回 None，跳过结果显示")
+
+                logger.info("\n" + "="*60)
+                logger.info("🧪 GetOdd 测试完成")
+                logger.info("="*60 + "\n")
+
+
+
                 return
                 # ========== 测试 CreateBetslip 功能 ==========
                 # 不依赖 GetOdd 结果，直接测试
@@ -255,7 +312,7 @@ async def main():
                     logger.info("🧪 测试 GetPrice 功能")
                     logger.info("="*60)
 
-                    from automationPlaywright.betinasian.operations.GetPrice import get_price_by_betslip_id, get_pmm_stats
+                    from automationPlaywright.betinasian.jsCodeExcutors.queries.pmm import get_price_by_betslip_id, get_pmm_stats
 
                     # 检查 PMM 模块是否加载
                     logger.info("\n🔍 检查 PMM 模块...")
@@ -803,7 +860,7 @@ async def main():
                         logger.info("🧪 测试按赔率查询总金额功能")
                         logger.info("="*60)
 
-                        from automationPlaywright.betinasian.operations.GetPrice import get_total_amount_at_price
+                        from automationPlaywright.betinasian.jsCodeExcutors.queries.pmm import get_total_amount_at_price
 
                         # 测试目标赔率 (根据实际价格范围)
                         target_prices = [1.2, 1.15, 1.1,1.0]

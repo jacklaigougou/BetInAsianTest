@@ -4,10 +4,12 @@ BetInAsian 获取赔率
 """
 from typing import Dict, Any
 import logging
+import asyncio
 from utils.matchGameName import fuzzy_match_teams
 from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets
 from ..MappingBetburgerToBetinisian import build_bet_type_from_spider
 from ..jsCodeExcutors.http_executors import create_betslip
+from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id
 
 logger = logging.getLogger(__name__)
 
@@ -239,22 +241,8 @@ async def GetOdd(
         bet_type=bet_type
     )
 
-    # 7. 返回完整结果
-    if betslip_result.get('success'):
-        logger.info(f"✅ Betslip 创建成功!")
-        return {
-            'success': True,
-            'event_id': event_id,
-            'event_key': event_key,
-            'bet_type': bet_type,
-            'betslip_result': betslip_result,
-            'match_info': {
-                'match_type': match_result.get('match_type'),
-                'score': match_result.get('score'),
-                'event': event
-            }
-        }
-    else:
+    # 7. 处理 betslip 创建结果
+    if not betslip_result.get('success'):
         logger.error(f"❌ Betslip 创建失败: {betslip_result.get('error')}")
         return {
             'success': False,
@@ -269,3 +257,52 @@ async def GetOdd(
                 'event': event
             }
         }
+
+    logger.info(f"✅ Betslip 创建成功!")
+
+    # 提取 betslip_id (尝试两种可能的路径)
+    betslip_data = betslip_result.get('data', {})
+    betslip_id = betslip_data.get('betslip_id')
+
+    # 如果第一层没有,尝试嵌套的 data.data.betslip_id
+    if not betslip_id and 'data' in betslip_data:
+        betslip_id = betslip_data.get('data', {}).get('betslip_id')
+
+    if not betslip_id:
+        logger.error(f"❌ 无法从响应中提取 betslip_id")
+        logger.error(f"响应结构: {betslip_result}")
+        return {
+            'success': False,
+            'message': 'Betslip 创建成功但无法提取 betslip_id',
+            'betslip_result': betslip_result
+        }
+
+    logger.info(f"📋 Betslip ID: {betslip_id}")
+
+    # 8. 等待 PMM 数据到达并获取最佳赔率
+    logger.info(f"⏳ 等待 PMM 数据...")
+    await asyncio.sleep(3)  # 等待 3 秒让 PMM 数据到达
+
+    logger.info(f"🔍 获取最佳赔率...")
+    best_price_result = await get_price_by_betslip_id(
+        page=self.page,
+        betslip_id=betslip_id,
+        required_amount=10.0,
+        required_currency="GBP"
+    )
+
+    # 9. 返回完整结果
+    return {
+        'success': True,
+        'event_id': event_id,
+        'event_key': event_key,
+        'bet_type': bet_type,
+        'betslip_id': betslip_id,
+        'betslip_result': betslip_result,
+        'best_price': best_price_result,  # 新增: 最佳赔率信息
+        'match_info': {
+            'match_type': match_result.get('match_type'),
+            'score': match_result.get('score'),
+            'event': event
+        }
+    }
