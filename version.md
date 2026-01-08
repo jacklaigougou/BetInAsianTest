@@ -52,3 +52,7 @@ BIA ,测试全部通过
 
 # v1.0.16
 改良offers_event
+
+# v1.0.17
+改良events_managner
+

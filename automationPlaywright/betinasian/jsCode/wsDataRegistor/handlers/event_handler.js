@@ -49,10 +49,19 @@ class EventHandler {
                 isInRunning: isInRunning    // 布尔标记: 是否正在进行
             };
 
-            // 7. 更新 events_store
+            // 7. 完整重索引流程: 先移除旧索引,再建立新索引
+            const oldEvent = window.__eventsStore.get(eventKey);
+            const oldSportPeriod = oldEvent ? `${oldEvent.sport}${oldEvent.period ? '_' + oldEvent.period.toLowerCase() : ''}` : null;
+
+            // 更新 store
             const event = window.__eventsStore.update(eventKey, eventData);
 
-            // 8. 建立索引
+            // 移除旧索引 (如果存在)
+            if (oldEvent && oldSportPeriod) {
+                window.__eventsManager.removeEventIndexes(oldEvent, oldSportPeriod);
+            }
+
+            // 建立新索引 (基于最终合并后的数据)
             window.__eventsManager.indexEvent(event, sportPeriod);
 
             // 9. 通知订阅管理器

@@ -107,17 +107,17 @@ class EventsManager {
 
         // 索引1: bySport (使用完整的 sport_period)
         if (sportPeriod) {
-            this.addToIndex('bySport', sportPeriod, eventKey);
+            this.addToIndex('bySport', String(sportPeriod), eventKey);
         }
 
-        // 索引2: byCompetition
-        if (event.competition_id) {
-            this.addToIndex('byCompetition', event.competition_id, eventKey);
+        // 索引2: byCompetition (统一转为字符串)
+        if (event.competition_id !== null && event.competition_id !== undefined) {
+            this.addToIndex('byCompetition', String(event.competition_id), eventKey);
         }
 
-        // 索引3: byDate
+        // 索引3: byDate (保持字符串)
         if (event.date) {
-            this.addToIndex('byDate', event.date, eventKey);
+            this.addToIndex('byDate', String(event.date), eventKey);
         }
 
         // 索引4: byScope
@@ -175,13 +175,13 @@ class EventsManager {
         const eventKey = event.event_key;
 
         if (sportPeriod) {
-            this.removeFromIndex('bySport', sportPeriod, eventKey);
+            this.removeFromIndex('bySport', String(sportPeriod), eventKey);
         }
-        if (event.competition_id) {
-            this.removeFromIndex('byCompetition', event.competition_id, eventKey);
+        if (event.competition_id !== null && event.competition_id !== undefined) {
+            this.removeFromIndex('byCompetition', String(event.competition_id), eventKey);
         }
         if (event.date) {
-            this.removeFromIndex('byDate', event.date, eventKey);
+            this.removeFromIndex('byDate', String(event.date), eventKey);
         }
         if (event.scope) {
             this.removeFromIndex('byScope', event.scope, eventKey);
@@ -218,22 +218,6 @@ class EventsManager {
         }
     }
 
-    /**
-     * 删除 market 的所有索引
-     * @param {Object} market - 市场对象
-     */
-    removeMarketIndexes(market) {
-        const marketKey = market.market_key;
-        const eventKey = market.event_key;
-
-        if (this.indexes.activeLinesByEvent.has(eventKey)) {
-            this.indexes.activeLinesByEvent.get(eventKey).delete(marketKey);
-        }
-
-        if (market.market_group) {
-            this.removeFromIndex('byMarketGroup', market.market_group, marketKey);
-        }
-    }
 
     /**
      * 获取索引统计信息
