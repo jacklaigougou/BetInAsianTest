@@ -6,24 +6,26 @@ from typing import Dict, Any
 import logging
 from utils.matchGameName import fuzzy_match_teams
 from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets
+from ..MappingBetburgerToBetinisian import build_bet_type_from_spider
+from ..jsCodeExcutors.http_executors import create_betslip
 
 logger = logging.getLogger(__name__)
 
 
 async def get_event_key_by_team_name(
     self,
-    dispatch_message: Dict[str, Any],
+    spider_home: str,
+    spider_away: str,
+    spider_sport_type: str,
     **kwargs
 ) -> Dict[str, Any]:
     """
     通过队名匹配获取 betinasian 的比赛 event_key
 
     Args:
-        dispatch_message: {
-            'spider_sport_type': 'fb',
-            'spider_home': 'Manchester United',
-            'spider_away': 'Chelsea'
-        }
+        spider_home: 外部平台主队名 (e.g., 'Manchester United')
+        spider_away: 外部平台客队名 (e.g., 'Chelsea')
+        spider_sport_type: 运动类型 (e.g., 'basket', 'fb')
         **kwargs: 额外参数
 
     Returns:
@@ -43,34 +45,31 @@ async def get_event_key_by_team_name(
     Examples:
         >>> result = await get_event_key_by_team_name(
         ...     self,
-        ...     {'spider_sport_type': 'fb', 'spider_home': 'Arsenal', 'spider_away': 'Chelsea'}
+        ...     spider_home='Arsenal',
+        ...     spider_away='Chelsea',
+        ...     spider_sport_type='fb'
         ... )
         >>> result['success']
         True
     """
-    # 1. 提取参数
-    spider_sport_type = dispatch_message.get('spider_sport_type', '')
-    spider_home = dispatch_message.get('spider_home', '')
-    spider_away = dispatch_message.get('spider_away', '')
-
     logger.info(f"开始匹配比赛: {spider_home} vs {spider_away} ({spider_sport_type})")
 
-    # 2. 查询 betinasian 比赛列表
+    # 1. 查询 betinasian 比赛列表
     events = await query_betinasian_events(
         page=self.page,
         sport_type=spider_sport_type,
         in_running_only=True
     )
 
-    # if not events:
-    #     return {
-    #         'success': False,
-    #         'message': f'未找到 {spider_sport_type} 正在进行的比赛'
-    #     }
+    if not events:
+        return {
+            'success': False,
+            'message': f'未找到 {spider_sport_type} 正在进行的比赛'
+        }
 
-    # logger.info(f"从 betinasian 获取到 {len(events)} 场比赛")
+    logger.info(f"从 betinasian 获取到 {len(events)} 场比赛")
 
-    # 3. 模糊匹配
+    # 2. 队名匹配 (先精确匹配,失败后模糊匹配)
     match_result = fuzzy_match_teams(
         spider_home=spider_home,
         spider_away=spider_away,
@@ -81,6 +80,7 @@ async def get_event_key_by_team_name(
     if match_result:
         logger.info(f"匹配成功: event_key={match_result['event_key']}, "
                    f"type={match_result['match_type']}, score={match_result['score']:.2f}")
+        
         # 返回完整的匹配结果,包含完整的 event 对象
         return {
             'success': True,
@@ -95,7 +95,26 @@ async def get_event_key_by_team_name(
             'success': False,
             'message': f'未找到匹配的比赛: {spider_home} vs {spider_away}'
         }
-
+async def sport_type_to_betinasian_sport_type(
+    self,
+    spider_sport_type: str,
+    **kwargs
+) -> str:
+    """
+            将爬虫运动类型转换为 betinasian 运动类型
+        Args:
+            spider_sport_type: 爬虫运动类型
+            **kwargs: 额外参数
+        Returns:
+            betinasian 运动类型
+    """
+    
+    if spider_sport_type == 'basketball':
+        return 'basket'
+    elif spider_sport_type == 'soccer':
+        return 'fb'
+    else:
+        return spider_sport_type
 
 async def GetOdd(
     self,
@@ -103,25 +122,30 @@ async def GetOdd(
     **kwargs
 ) -> Dict[str, Any]:
     """
-        获取赔率
+        获取赔率并创建 Betslip
 
         Args:
             dispatch_message: {
-                'spider_sport_type': 'fb',
-                'spider_home': 'Manchester United',
-                'spider_away': 'Chelsea',
-                'market_group': 'ahou',  # 可选: 盘口类型
-                'bet_type': 'home'       # 可选: 投注类型
+                'spider_sport_type': 'basket',           # 运动类型
+                'spider_home': 'Manchester United',      # 主队
+                'spider_away': 'Chelsea',                # 客队
+                'spider_market_id': '17',                # Spider market ID
+                'spider_handicap_value': -5.5            # 让分值 (可选)
             }
             **kwargs: 额外参数
 
         Returns:
             {
                 'success': True,
+                'event_id': str,
                 'event_key': str,
-                'odd': float,
-                'market_data': {...},
-                'total_markets': int
+                'bet_type': str,
+                'betslip_result': {...},
+                'match_info': {
+                    'match_type': 'exact'/'fuzzy',
+                    'score': float,
+                    'event': {...}
+                }
             }
             或
             {
@@ -132,95 +156,116 @@ async def GetOdd(
         Examples:
             >>> result = await GetOdd(
             ...     self,
-            ...     {'spider_sport_type': 'fb', 'spider_home': 'Arsenal', 'spider_away': 'Chelsea'}
+            ...     {
+            ...         'spider_sport_type': 'basket',
+            ...         'spider_home': 'Arsenal',
+            ...         'spider_away': 'Chelsea',
+            ...         'spider_market_id': '17',
+            ...         'spider_handicap_value': -5.5
+            ...     }
             ... )
             >>> result['success']
-        True
+            True
     """
-    # 1. 获取 event_key
-    match_result = await get_event_key_by_team_name(self, dispatch_message, **kwargs)
+    # 1. 提取参数
+    spider_home = dispatch_message.get('spider_home')
+    spider_away = dispatch_message.get('spider_away')
+    spider_sport_type = dispatch_message.get('spider_sport_type')
+    spider_market_id = dispatch_message.get('spider_market_id')
+    spider_handicap_value = dispatch_message.get('spider_handicap_value')
+
+    # 2. 将爬虫运动类型转换为 betinasian 运动类型  如: basketball -> basket,soccer -> fb
+    spider_sport_type = await sport_type_to_betinasian_sport_type(
+        self,
+        spider_sport_type=spider_sport_type,
+        **kwargs
+    )
+
+    # 2. 获取 event_key (通过队名匹配) 如:2026-01-04,31629,36428
+    match_result = await get_event_key_by_team_name(
+        self,
+        spider_home=spider_home,
+        spider_away=spider_away,
+        spider_sport_type=spider_sport_type,
+        **kwargs
+    )
 
     if not match_result.get('success'):
         return match_result
+
     event = match_result.get('event')
-    print(event)
     event_key = match_result.get('event_key')
-    logger.info(f"获取赔率: event_key={event_key}")
+    logger.info(f"✅ 队名匹配成功: event_key={event_key}")
 
-    # 2. 查询 offers (简单数据)
-    offers = await query_active_markets(  # 函数名保持不变,但实际返回 offers 列表
-        page=self.page,
-        event_key=event_key
-    )
+    # 3. event_id = event_key (BetInAsian 使用相同格式) 如:2026-01-04,31629,36428
+    event_id = event_key
 
-    if not offers:
+    # 4. 验证必需参数
+    if not spider_market_id:
         return {
             'success': False,
-            'message': f'未找到 offers 数据: {event_key}'
+            'message': '缺少必需参数: spider_market_id'
         }
 
-    logger.info(f"查询到 {len(offers)} 种 offer 类型")
+    logger.info(f"Spider Market: ID={spider_market_id}, Handicap={spider_handicap_value}")
 
-    # 3. 订阅 watch_event 获取详细数据
-    try:
-        # 从 event 中提取 competition_id 和 sport
-        competition_id = event.get('competition_id')
-        sport = event.get('sport_period', '').split('_')[0] if event.get('sport_period') else 'basket'
+    # 5. 构造 bet_type (使用统一映射接口) 
+    """
+        ("basket", "17", -5.5)	{"betinasian_market": "ah", "betinasian_side": "h", "line_id": -22}	"for,ah,h,-22"
+        输入17 ,其实已经包含了 两个信息: market_type 和 side
+        所以不需要再进行映射
+    """
+    bet_type = build_bet_type_from_spider(
+        sport_type=spider_sport_type,
+        spider_market_id=spider_market_id,
+        handicap_value=spider_handicap_value
+    )
 
-        logger.info(f"订阅 watch_event: event_key={event_key}, sport={sport}, competition_id={competition_id}")
+    if not bet_type:
+        return {
+            'success': False,
+            'message': f'无法映射 market ID: {spider_market_id} (sport: {spider_sport_type})'
+        }
 
-        # 检查是否已订阅
-        is_watched = await self.page.evaluate(f'''
-            window.__watchManager.isWatched("{event_key}")
-        ''')
+    logger.info(f"✅ 构造 bet_type: {bet_type}")
 
-        if not is_watched:
-            # 发送 watch_event 订阅
-            watch_success = await self.page.evaluate(f'''
-                window.__watchManager.watch("{event_key}", "{sport}", {competition_id})
-            ''')
+    # 6. 调用 create_betslip, 申请一个 betslip ,并且会触发 ws 中接收 pmm 的数据.
+    logger.info(f"📋 创建 Betslip: sport={spider_sport_type}, event_id={event_id}, bet_type={bet_type}")
 
-            if watch_success:
-                logger.info(f"✅ watch_event 订阅成功")
-                # 等待数据返回
-                import asyncio
-                await asyncio.sleep(2)
-            else:
-                logger.warning(f"⚠️ watch_event 订阅失败")
-        else:
-            logger.info(f"✅ 事件已订阅")
+    betslip_result = await create_betslip(
+        page=self.page,
+        sport=spider_sport_type,
+        event_id=event_id,
+        bet_type=bet_type
+    )
 
-        # 查询 offers_event 详细数据 - 只获取 ah 盘口
-        ah_lines = await self.page.evaluate(f'''
-            window.queryData.parseAllOfferEventLines("{event_key}", "ah")
-        ''')
-
-        if ah_lines:
-            logger.info(f"✅ 获取到 ah 盘口详细数据,共 {len(ah_lines)} 个 line_id")
-            logger.info(f"\n{'='*60}")
-            logger.info(f"📊 AH 盘口详细数据:")
-            logger.info(f"{'='*60}")
-
-            for idx, line_data in enumerate(ah_lines, 1):
-                line_id = line_data.get('line_id')
-                odds = line_data.get('odds')
-                logger.info(f"\n  [{idx}] Line ID: {line_id}")
-                logger.info(f"      Odds: {odds}")
-
-            logger.info(f"{'='*60}\n")
-        else:
-            logger.warning(f"⚠️ 未获取到 ah 盘口数据")
-
-    except Exception as e:
-        logger.error(f"❌ watch_event 处理异常: {e}")
-        # 不影响主流程,继续使用 offers_hcap 数据
-
-    # 4. 筛选目标 offer
-    # TODO: 根据 dispatch_message 中的 offer_type 和 bet_type 筛选具体 offer
-    # 默认取第一个 offer
-    target_offer = offers[0]
-
-    # 提取赔率
-    # target_offer 格式: {'offer_type': 'ah', 'line_id': 20, 'odds': {'a': 1.877, 'h': 1.862}}
-    
-
+    # 7. 返回完整结果
+    if betslip_result.get('success'):
+        logger.info(f"✅ Betslip 创建成功!")
+        return {
+            'success': True,
+            'event_id': event_id,
+            'event_key': event_key,
+            'bet_type': bet_type,
+            'betslip_result': betslip_result,
+            'match_info': {
+                'match_type': match_result.get('match_type'),
+                'score': match_result.get('score'),
+                'event': event
+            }
+        }
+    else:
+        logger.error(f"❌ Betslip 创建失败: {betslip_result.get('error')}")
+        return {
+            'success': False,
+            'message': f"Betslip 创建失败: {betslip_result.get('error')}",
+            'event_id': event_id,
+            'event_key': event_key,
+            'bet_type': bet_type,
+            'betslip_result': betslip_result,
+            'match_info': {
+                'match_type': match_result.get('match_type'),
+                'score': match_result.get('score'),
+                'event': event
+            }
+        }

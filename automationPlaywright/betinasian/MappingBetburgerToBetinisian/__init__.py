@@ -55,7 +55,8 @@ from .mapping import (
     is_sport_supported,
     MarketMapper,
     map_market,
-    validate_mapping
+    validate_mapping,
+    build_bet_type_from_spider
 )
 
 __all__ = [
@@ -74,6 +75,7 @@ __all__ = [
     'is_sport_supported',
     'map_market',
     'validate_mapping',
+    'build_bet_type_from_spider',
 
     # Object-oriented interface
     'MarketMapper'

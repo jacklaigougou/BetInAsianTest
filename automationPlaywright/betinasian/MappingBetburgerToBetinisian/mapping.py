@@ -382,3 +382,58 @@ def validate_mapping(
         return False, None, f"Cannot map market ID: {spider_market_id}"
 
     return True, mapping, None
+
+
+def build_bet_type_from_spider(
+    sport_type: str,
+    spider_market_id: str,
+    handicap_value: Optional[float] = None
+) -> Optional[str]:
+    """
+    Build BetInAsian bet_type string directly from spider market parameters
+
+    This is a convenience function that combines parse_spider_market() and
+    bet_type_builder.build() into a single call.
+
+    Args:
+        sport_type: Sport type ("basket", "soccer", "fb", etc.)
+        spider_market_id: Spider market ID (e.g., "17", "1")
+        handicap_value: Handicap value (e.g., -5.5, 170), optional
+
+    Returns:
+        BetInAsian bet_type string (e.g., "for,ah,h,-22" or "for,ml,h")
+        or None if cannot map
+
+    Examples:
+        >>> # Basketball Asian Handicap
+        >>> build_bet_type_from_spider("basket", "17", -5.5)
+        "for,ah,h,-22"
+
+        >>> # Basketball Money Line
+        >>> build_bet_type_from_spider("basket", "1")
+        "for,ml,h"
+
+        >>> # Basketball Over/Under
+        >>> build_bet_type_from_spider("basket", "19", 170)
+        "for,ahou,o,680"
+
+        >>> # Soccer Asian Handicap
+        >>> build_bet_type_from_spider("soccer", "17", -0.5)
+        "for,ah,h,-2"
+
+        >>> # Invalid sport
+        >>> build_bet_type_from_spider("tennis", "17", -5.5)
+        None
+    """
+    # Step 1: Parse spider market to get mapping
+    mapping = parse_spider_market(sport_type, spider_market_id, handicap_value)
+
+    if not mapping:
+        return None
+
+    # Step 2: Build bet_type string from mapping
+    from .bet_type_builder import build
+
+    bet_type = build(mapping)
+
+    return bet_type

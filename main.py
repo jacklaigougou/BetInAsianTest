@@ -39,9 +39,6 @@ async def main():
         if status['is_working']:
             # 浏览器已经启动
             logger.info(f"✓ 浏览器已经在运行中")
-            logger.info(f"  - 浏览器名称: {status.get('handler_name', 'N/A')}")
-            logger.info(f"  - 调试端口: {status.get('debug_port', 'N/A')}")
-            logger.info(f"  - WebSocket URL: {status.get('ws_url', 'N/A')}")
         else:
             # 浏览器未启动，需要启动
             logger.info(f"✗ 浏览器未运行，正在启动...")
@@ -51,14 +48,12 @@ async def main():
 
             if launch_result.get('success'):
                 logger.info(f"✓ 浏览器启动成功")
-                logger.info(f"  - 调试端口: {launch_result.get('debug_port', 'N/A')}")
-                logger.info(f"  - WebSocket URL: {launch_result.get('ws_url', 'N/A')}")
             else:
                 logger.error(f"✗ 浏览器启动失败: {launch_result.get('error', 'Unknown error')}")
                 return
 
         # 再次检查浏览器状态
-        logger.info("\n再次检查浏览器状态...")
+        
         final_status = await finger_browser.judge_browser_working(browser_id)
         logger.info(f"最终状态: {'运行中' if final_status['is_working'] else '未运行'}")
 
@@ -109,10 +104,7 @@ async def main():
                 automation._automation.page = target_page
                 logger.info(f"✓ 已更新 automation.page: {target_page}")
 
-                # ========== 先查看正在进行的篮球比赛 ==========
-                logger.info("\n" + "="*60)
-                logger.info("🏀 查看正在进行的篮球比赛")
-                logger.info("="*60)
+               
 
                 try:
                     basket_events = await target_page.evaluate('window.queryData.inRunningSport("basket")')
@@ -182,14 +174,13 @@ async def main():
                 # 构造测试消息
                 test_dispatch_message = {
                     'spider_sport_type': 'basket',
-                    'spider_home': 'fenerbahce sk',
-                    'spider_away': 'olympiacos piraeus bc'
+                    'spider_home': 'dubai',
+                    'spider_away': 'fenerbahce',
+                    'spider_market_id': '17',        # Asian Handicap - Home
+                    'spider_handicap_value': -4    # 让分 -5.5
                 }
 
-                logger.info(f"📋 测试数据:")
-                logger.info(f"  - 运动类型: {test_dispatch_message['spider_sport_type']}")
-                logger.info(f"  - 主队: {test_dispatch_message['spider_home']}")
-                logger.info(f"  - 客队: {test_dispatch_message['spider_away']}")
+                
 
                 # 打印实际的 WebSocket 消息样本
                 logger.info("\n📡 检查实际收到的 WebSocket 消息...")
@@ -207,34 +198,7 @@ async def main():
                 logger.info("\n🔍 开始获取赔率...")
                 odd_result = await automation.GetOdd(test_dispatch_message)
 
-                # 显示结果
-                logger.info("\n📊 GetOdd 结果:")
-                if odd_result:
-                    logger.info(f"  - 成功: {odd_result.get('success')}")
-
-                    if odd_result.get('success'):
-                        logger.info(f"  - Event Key: {odd_result.get('event_key')}")
-                        logger.info(f"  - 赔率: {odd_result.get('odd')}")
-                        logger.info(f"  - 盘口总数: {odd_result.get('total_markets')}")
-                        logger.info(f"  - 匹配类型: {odd_result.get('match_info', {}).get('match_type')}")
-                        logger.info(f"  - 匹配分数: {odd_result.get('match_info', {}).get('score')}")
-
-                        # 显示完整的 event 信息
-                        event = odd_result.get('match_info', {}).get('event', {})
-                        logger.info(f"\n  - Event 详情:")
-                        logger.info(f"    · 主队: {event.get('home')}")
-                        logger.info(f"    · 客队: {event.get('away')}")
-                        logger.info(f"    · 联赛: {event.get('competition_name')}")
-                        logger.info(f"    · 运动: {event.get('sport')}")
-                        logger.info(f"    · 是否进行中: {event.get('isInRunning')}")
-                    else:
-                        logger.error(f"  - 错误信息: {odd_result.get('message')}")
-                else:
-                    logger.warning("  - GetOdd 返回 None，跳过结果显示")
-
-                logger.info("\n" + "="*60)
-                logger.info("🧪 GetOdd 测试完成")
-                logger.info("="*60 + "\n")
+                
                 
                 
                 return
@@ -245,7 +209,7 @@ async def main():
                 logger.info("="*60)
 
                 # 测试使用简单的 Money Line 投注
-                from automationPlaywright.betinasian.operations.CreateBetslip import create_betslip
+                from automationPlaywright.betinasian.jsCodeExcutors.http_executors import create_betslip
 
                 # 测试数据: 简单的 Money Line 投注
                 logger.info("\n📋 测试数据:")
@@ -419,7 +383,7 @@ async def main():
                             logger.info("🧪 测试 PlaceOrder 功能")
                             logger.info("="*60)
 
-                            from automationPlaywright.betinasian.jsCodeExcutors.PlaceOrder import place_order
+                            from automationPlaywright.betinasian.jsCodeExcutors.http_executors import place_order
 
                             # 直接从 Store 获取最高价格 (不过滤 required_amount)
                             highest_price_data = await target_page.evaluate(

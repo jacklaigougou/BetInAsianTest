@@ -16,10 +16,15 @@ from .inject_registors import (
     get_router_stats
 )
 
-from .PlaceOrder import (
+# HTTP Executors
+from .http_executors import (
+    create_betslip,
+    create_betslip_from_mapping,
+    parse_bet_type_from_mapping,
     place_order
 )
 
+# Query Executors
 from .queries.orders.get_order import (
     get_order_by_id,
     get_orders_by_status,
@@ -44,7 +49,10 @@ __all__ = [
     'get_registor_stats',
     'get_router_stats',
 
-    # 订单相关
+    # HTTP Executors
+    'create_betslip',
+    'create_betslip_from_mapping',
+    'parse_bet_type_from_mapping',
     'place_order',
 
     # Order/Bet 查询相关
