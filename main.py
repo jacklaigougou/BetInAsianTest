@@ -174,10 +174,10 @@ async def main():
                 # 构造测试消息
                 test_dispatch_message = {
                     'spider_sport_type': 'basket',
-                    'spider_home': 'bakken bears',
-                    'spider_away': 'svendborg',
+                    'spider_home': 'jena',
+                    'spider_away': 'rostock',
                     'spider_market_id': '17',        # Asian Handicap - Home
-                    'spider_handicap_value': -6.5    # 让分 -5.5
+                    'spider_handicap_value': 4.5    # 让分 -5.5
                 }
 
                 # 调用 GetOdd
@@ -242,56 +242,58 @@ async def main():
                 logger.info("🧪 GetOdd 测试完成")
                 logger.info("="*60 + "\n")
 
-
-
-                return
-                # ========== 测试 CreateBetslip 功能 ==========
-                # 不依赖 GetOdd 结果，直接测试
+                # ========== 测试 BettingOrder 功能 ==========
                 logger.info("\n" + "="*60)
-                logger.info("🧪 测试 CreateBetslip 功能")
+                logger.info("🧪 测试 BettingOrder 功能")
                 logger.info("="*60)
 
-                # 测试使用简单的 Money Line 投注
-                from automationPlaywright.betinasian.jsCodeExcutors.http_executors import create_betslip
+                # 调用 BettingOrder（完整下单流程）
+                logger.info("\n🎯 开始下注流程...")
 
-                # 测试数据: 简单的 Money Line 投注
-                logger.info("\n📋 测试数据:")
-                event_id = "2026-01-07,96326,41086"
-                bet_type = "for,ml,a"  # ✅ 修正：使用正确的 bet_type（与 PMM 匹配）
-                logger.info(f"  - Event ID: {event_id}")
-                logger.info(f"  - Bet Type: {bet_type} (Away)")
-                logger.info(f"  - Sport: basket")
+                betting_result = await automation.BettingOrder(
+                    dispatch_message=test_dispatch_message,
+                    stake=2.0,              # 投注 2 GBP
+                    currency="GBP",
+                    duration=30,            # 订单有效期 30 秒
+                    wait_for_order=True     # 等待订单数据
+                )
 
-                betslip_result = None  # 初始化变量
+                # 显示结果
+                logger.info("\n📊 BettingOrder 结果:")
+                if betting_result:
+                    logger.info(f"  - 成功: {betting_result.get('success')}")
 
-                try:
-                    betslip_result = await create_betslip(
-                        page=target_page,
-                        sport="basket",
-                        event_id=event_id,
-                        bet_type=bet_type
-                    )
+                    if betting_result.get('success'):
+                        logger.info(f"\n  📌 订单信息:")
+                        logger.info(f"    - Order ID: {betting_result.get('order_id')}")
+                        logger.info(f"    - Betslip ID: {betting_result.get('betslip_id')}")
+                        logger.info(f"    - Event ID: {betting_result.get('event_id')}")
+                        logger.info(f"    - Bet Type: {betting_result.get('bet_type')}")
 
-                    # 显示结果
-                    logger.info("\n📊 CreateBetslip 结果:")
-                    logger.info(f"  - 成功: {betslip_result.get('success')}")
-                    logger.info(f"  - 状态码: {betslip_result.get('status')}")
+                        logger.info(f"\n  💰 价格信息:")
+                        logger.info(f"    - Price: {betting_result.get('price')}")
+                        logger.info(f"    - Bookie: {betting_result.get('bookie')}")
+                        logger.info(f"    - Stake: {betting_result.get('stake')} {betting_result.get('currency')}")
+                        logger.info(f"    - Duration: {betting_result.get('duration')} seconds")
 
-                    if betslip_result.get('success'):
-                        logger.info(f"  - 响应数据:")
-                        import json
-                        logger.info(json.dumps(betslip_result.get('data'), indent=4, ensure_ascii=False))
+                        logger.info(f"\n  📈 订单状态:")
+                        logger.info(f"    - Status: {betting_result.get('order_status')}")
+                        logger.info(f"    - Matched: {betting_result.get('matched_amount')}")
+                        logger.info(f"    - Unmatched: {betting_result.get('unmatched_amount')}")
+                        logger.info(f"    - Bets: {len(betting_result.get('bets', []))} bets")
+
+                        logger.info(f"\n  ✅ {betting_result.get('message')}")
                     else:
-                        logger.error(f"  - 错误: {betslip_result.get('error')}")
-
-                except Exception as e:
-                    logger.error(f"❌ CreateBetslip 测试失败: {e}", exc_info=True)
-                    betslip_result = {'success': False}
+                        logger.error(f"  ❌ 错误信息: {betting_result.get('message')}")
+                else:
+                    logger.warning("  ⚠️ BettingOrder 返回 None")
 
                 logger.info("\n" + "="*60)
-                logger.info("🧪 CreateBetslip 测试完成")
+                logger.info("🧪 BettingOrder 测试完成")
                 logger.info("="*60 + "\n")
 
+                return
+                
                 # ========== 测试 GetPrice 功能 ==========
                 if betslip_result and betslip_result.get('success'):
                     logger.info("\n" + "="*60)
