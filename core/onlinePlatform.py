@@ -359,7 +359,13 @@ class OnlinePlatform:
         try:
             module = importlib.import_module(f"{folder_addr}.{file_name}")
             ActionChainClass = getattr(module, class_name)
-            ac = ActionChainClass(online_platform=account, ws_client=self._ws_client)
+            ac = ActionChainClass(
+                browser_controller=browser_controller,
+                page=page,
+                config=account,
+                ws_client=self._ws_client,
+                online_platform=account
+            )
             account['ac'] = ac
             print(f"?? [{handler_name}] ac: {ac}")
 

@@ -176,7 +176,7 @@ async def _send_betting_request(
     return response
 
 
-def _parse_betting_response(
+async def _parse_betting_response(
     self,
     response: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
@@ -196,7 +196,7 @@ def _parse_betting_response(
         或 None (解析失败)
 
     Examples:
-        >>> parsed = _parse_betting_response(self, response)
+        >>> parsed = await _parse_betting_response(self, response)
         >>> parsed['status']
         'ACCEPTED'
     """
@@ -516,7 +516,7 @@ async def BettingOrder(
         # ========== Step 4: 解析响应数据 ==========
         logger.info(f"[{handler_name}] Step 4: 解析响应数据")
 
-        parsed = _parse_betting_response(self, response)
+        parsed = await _parse_betting_response(self, response)
         if not parsed:
             # 响应格式不正确，尝试更新余额
             new_balance = await GetBalanceByRequest(self)

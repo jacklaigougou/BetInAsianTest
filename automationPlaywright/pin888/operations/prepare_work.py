@@ -35,6 +35,7 @@ async def prepare_work(
     try:
         # ========== Step 1: 检查页面状态 ==========
         logger.info(f"[{handler_name}] Step 1: 检查页面状态")
+        print(f"🧾 [{handler_name}] Step 1: 检查页面状态")
 
         if not self.page:
             return {'success': False, 'message': 'page 对象不存在'}
@@ -53,6 +54,7 @@ async def prepare_work(
 
         # ========== Step 2: 检查登录状态 ==========
         logger.info(f"[{handler_name}] Step 2: 检查登录状态")
+        print(f"🧾 [{handler_name}] Step 2: 检查登录状态")
 
         deposit_link = await self.pom.find_deposit_link_element()
         deposit_count = await deposit_link.count()
@@ -63,6 +65,7 @@ async def prepare_work(
         else:
             # ========== Step 3: 执行登录流程 ==========
             logger.info(f"[{handler_name}] Step 3: 执行登录流程")
+            print(f"🧾 [{handler_name}] Step 3: 执行登录流程")
 
             login_success = await _perform_login(self)
 
@@ -71,6 +74,7 @@ async def prepare_work(
 
         # ========== Step 4: 注入 WebSocket Hook ==========
         logger.info(f"[{handler_name}] Step 4: 注入 WebSocket Hook")
+        print(f"🧾 [{handler_name}] Step 4: 注入 WebSocket Hook")
 
         hook_success = await _inject_websocket_hook(self)
 
@@ -80,6 +84,7 @@ async def prepare_work(
 
         # ========== Step 5: 获取余额并发送 ==========
         logger.info(f"[{handler_name}] Step 5: 获取余额并发送")
+        print(f"🧾 [{handler_name}] Step 5: 获取余额并发送")
 
         balance = await self.pom.find_balance_by_request()
 
@@ -108,6 +113,7 @@ async def prepare_work(
 
         # ========== 返回成功 ==========
         logger.info(f"[{handler_name}] ✅ 初始化成功")
+        print(f"✅ [{handler_name}] prepare_work 完成")
         return {
             'success': True,
             'message': '准备工作完成',

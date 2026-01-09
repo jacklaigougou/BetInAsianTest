@@ -28,16 +28,14 @@ class Pin888POM:
         Returns:
             str: 余额数值,如 "2.31",失败返回 None
         """
-        from utils.js_loader import get_js_loader
+        from utils import get_js_loader
         import json
         import time
 
         try:
             # 加载 JS 文件
-            js_code = get_js_loader(
-                file_name='Request_accountBalance.js',
-                platform_name='pin888'
-            )
+            js_loader = get_js_loader()
+            js_code = js_loader.get_js_content('pin888', 'Request_accountBalance.js')
 
             if not js_code:
                 print(f"❌ [PIN888] 加载 Request_accountBalance.js 失败")
