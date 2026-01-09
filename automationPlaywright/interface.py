@@ -42,6 +42,7 @@ class AutomationBase(ABC):
 
         # 保存其他参数
         self.other = kwargs
+        print(f"[Pin888Automation] init config = {self.config}")
 
     @abstractmethod
     async def prepare_work(self, **kwargs) -> Dict[str, Any]:

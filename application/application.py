@@ -40,20 +40,20 @@ class Application:
 
     async def setup(self):
         """初始化平台控制器"""
-        print("?? 初始化平台控制器...")
+        print("🛠 初始化平台控制器...")
 
-        print("?? 预加载 JS 文件...")
+        print("🧩 预加载 JS 文件...")
         for platform_name, platform_config in self.settings.PLATFORM_INFO.items():
             js_base_path = platform_config.get('js_base_path')
             if not js_base_path:
-                print(f"  ?? {platform_name}: 未配置 js_base_path")
+                print(f"  ⚠️ {platform_name}: 未配置 js_base_path")
                 continue
 
             count = self.js_loader.load_platform_js(platform_name, js_base_path)
             if count > 0:
                 print(f"  ? {platform_name}: {count} 个文件")
             else:
-                print(f"  ?? {platform_name}: 未找到 JS 文件")
+                print(f"  ⚠️ {platform_name}: 未找到 JS 文件")
 
         self.heartbeat_handler = HeartbeatHandler(
             ws_client=self.ws_client,
@@ -85,20 +85,20 @@ class Application:
             case 'server' | 'websocket':
                 print('收到 server 消息:', message)
             case _:
-                print(f"?? 未知消息来源: {from_}")
+                print(f"⚠️ 未知消息来源: {from_}")
 
     async def run(self):
         try:
             await self.setup()
-            print("?? 开始连接 WebSocket...")
+            print("🌐 开始连接 WebSocket...")
             await self.ws_client.connect()
         except KeyboardInterrupt:
-            print("\n?? 收到停止信号")
+            print("\n🛑 收到停止信号")
         except Exception as exc:  # noqa: BLE001
             print(f"? 程序错误: {exc}")
         finally:
             if self.heartbeat_handler:
                 self.heartbeat_handler.cancel()
             await self.online_platform.cleanup()
-            print("?? 程序退出")
+            print("👋 程序退出")
             await self.ws_client.close()

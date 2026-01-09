@@ -12,19 +12,19 @@ async def handle_electron_message(app: 'Application', message: Dict[str, Any]) -
         if app.settings.ENABLE_AUTO_MONITOR:
             added = await app.online_platform.update_accounts(message)
             accounts = app.online_platform.get_all_accounts()
-            print(f"?? 当前调度账号总数: {len(accounts)} (本次新增 {added})")
+            print(f"📋 当前调度账号总数: {len(accounts)} (本次新增 {added})")
         return
 
     if msg_type == 'set_automation_config':
         await _apply_automation_config(message)
         return
 
-    print(f"?? 未知的 electron 消息类型: {message}")
+    print(f"⚠️ 未知的 electron 消息类型: {message}")
 
 
 async def _apply_automation_config(message: Dict[str, Any]) -> None:
     """Apply automation configuration updates coming from Electron."""
-    print(f"?? [配置更新] 收到配置: {message.get('data')}")
+    print(f"🧩 [配置更新] 收到配置: {message.get('data')}")
     data = message.get('data', {})
 
     acceptable_drop_rate = data.get('acceptableDropRate')

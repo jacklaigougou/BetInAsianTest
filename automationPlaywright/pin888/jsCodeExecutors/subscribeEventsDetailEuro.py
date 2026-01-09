@@ -3,7 +3,7 @@ PIN888 平台 - EVENTS_DETAIL_EURO 订阅相关的 JS 代码执行器
 """
 
 import asyncio
-from utils.js_loader import get_js_loader
+from utils import get_js_loader
 import time
 
 async def subscribe_events_detail_euro(page, event_id):
@@ -58,9 +58,10 @@ async def subscribe_events_detail_euro(page, event_id):
         print(f"🧹 [PIN888] 已清空旧详情数据")
 
         # 4. 加载 EVENTS_DETAIL_EURO 订阅脚本
-        js_code = get_js_loader(
-            file_name='Subscribe_events_detail_euro.js',
-            platform_name='pin888'
+        js_loader = get_js_loader()
+        js_code = js_loader.get_js_content(
+            'pin888',
+            'Subscribe_events_detail_euro.js'
         )
 
 

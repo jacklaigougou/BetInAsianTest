@@ -38,7 +38,7 @@ class Pin888Automation(AutomationBase):
                 - online_platform: 平台状态字典 (兼容旧架构)
         """
         super().__init__(browser_controller, page, config, **kwargs)
-
+        print(config)
         # ✅ handler_name 已经在父类中从 config 提取
         # self.handler_name 可以直接使用
 

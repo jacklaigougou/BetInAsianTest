@@ -27,7 +27,7 @@ async def handle_dispatch_message(app, message: Dict[str, Any]) -> None:
         case 'single_side_failure':
             app.task_builder.build_single_side_failure_task(message)
         case _:
-            print(f"?? 未知的 dispatch 消息类型: {msg_type}")
+            print(f"⚠️ 未知的 dispatch 消息类型: {msg_type}")
 
 
 def _handle_stop_cycle(app, message: Dict[str, Any]) -> None:
@@ -35,12 +35,12 @@ def _handle_stop_cycle(app, message: Dict[str, Any]) -> None:
     handler_name = data.get('handler_name')
 
     if not handler_name:
-        print("?? stop_pin888_cycle 消息缺少 handler_name")
+        print("⚠️ stop_pin888_cycle 消息缺少 handler_name")
         return
 
     account = app.online_platform.get_account(handler_name)
     if not account:
-        print(f"?? 未找到账号: {handler_name}")
+        print(f"⚠️ 未找到账号: {handler_name}")
         return
 
     account['PIN888_CYCLEING'] = False

@@ -260,10 +260,10 @@ class OnlinePlatform:
         return added_count
 
     async def _create_page_and_ac(self, handler_name: str):
-        """?? page ? ActionChain."""
+        """创建 page 和 ActionChain。"""
         account = self._accounts.get(handler_name)
         if not account:
-            print(f"? ?? {handler_name} ???")
+            print(f"❌ 账号 {handler_name} 不存在")
             return
 
         if account.get('page') and account.get('ac'):
@@ -276,19 +276,19 @@ class OnlinePlatform:
         browser_id = account.get('ads_id')
 
         if not browser_id:
-            print(f"?? ?? {handler_name} ?? browser_id (ads_id),???? page")
-            print("   ??: ?? WebSocket ????? 'ads_id' ??")
+            print(f"⚠️ 账号 {handler_name} 缺少 browser_id (ads_id),跳过创建 page")
+            print("   提示: 请在 WebSocket 消息中添加 'ads_id' 字段")
             return
 
         if not port:
-            print(f"?? [{handler_name}] port ?????????,??? FingerBrowser ???????...")
+            print(f"🔍 [{handler_name}] port 不存在或首次初始化,尝试从 FingerBrowser 获取...")
             try:
                 browser_info = await self._finger_browser.get_single_browser_info(
                     browser_id=browser_id,
                     auto_launch=True
                 )
             except Exception as exc:
-                print(f"? [{handler_name}] ?????????: {exc}")
+                print(f"❌ [{handler_name}] 获取浏览器信息失败: {exc}")
                 return
 
             account['port'] = browser_info.get('debug_port')
@@ -296,7 +296,7 @@ class OnlinePlatform:
             port = account['port']
 
         if not port:
-            print(f"?? ?? {handler_name} ?????? port,???? page")
+            print(f"⚠️ 账号 {handler_name} 仍没有有效 port,跳过创建 page")
             return
 
         ws_url = account.get('ws_url')
@@ -311,7 +311,7 @@ class OnlinePlatform:
             )
             browser_controller = BrowserControler(browser_object, tool='playwright')
         except Exception as exc:
-            print(f"? [{handler_name}] ???????: {exc}")
+            print(f"❌ [{handler_name}] 连接浏览器失败: {exc}")
             return
 
         match_url = account.get('match_url')
@@ -322,14 +322,14 @@ class OnlinePlatform:
                 result = await browser_controller.check_url_exists(match_url)
                 if result.get('exists'):
                     page = result.get('page')
-                    print(f"? ???????: {handler_name} (url: {result.get('url')})")
+                    print(f"✅ 已找到匹配页面: {handler_name} (url: {result.get('url')})")
             except Exception as exc:
-                print(f"?? [{handler_name}] ??????: {exc}")
+                print(f"⚠️ [{handler_name}] 检查页面失败: {exc}")
 
         if not page:
             start_url = account.get('start_url')
             if not start_url:
-                print(f"?? ?? {handler_name} ?? start_url,???? page")
+                print(f"⚠️ 账号 {handler_name} 缺少 start_url,无法创建 page")
                 return
 
             try:
@@ -339,21 +339,21 @@ class OnlinePlatform:
                     timeout=30000
                 )
             except Exception as exc:
-                print(f"? [{handler_name}] ??????: {exc}")
+                print(f"❌ [{handler_name}] 创建页面失败: {exc}")
                 return
 
             if not create_result.get('success'):
-                print(f"?? [{handler_name}] ??????: {create_result.get('message')}")
+                print(f"⚠️ [{handler_name}] 创建页面失败: {create_result.get('message')}")
                 return
 
             page = create_result.get('page')
-            print(f"? [{handler_name}] ????? {create_result.get('url')}")
+            print(f"✅ [{handler_name}] 成功导航到 {create_result.get('url')}")
 
         account['browser_controller'] = browser_controller
         account['page'] = page
 
         if not all([folder_addr, file_name, class_name]):
-            print(f"?? ?? {handler_name} ?? ActionChain ??,???? ac")
+            print(f"⚠️ 账号 {handler_name} 缺少 ActionChain 配置,跳过创建 ac")
             return
 
         try:
@@ -367,18 +367,18 @@ class OnlinePlatform:
                 online_platform=account
             )
             account['ac'] = ac
-            print(f"?? [{handler_name}] ac: {ac}")
+            print(f"🔍 [{handler_name}] ac: {ac}")
 
             if hasattr(ac, 'prepare_work'):
                 try:
-                    print("?? ?? prepare_work ???...")
+                    print(f"🛠 [{handler_name}] 开始执行 prepare_work")
                     result = await ac.prepare_work()
                     if not result:
-                        print("?? prepare_work ??????")
+                        print(f"⚠️ [{handler_name}] prepare_work 未返回数据")
                 except Exception as exc:
-                    print(f"?? prepare_work ????: {exc}")
+                    print(f"⚠️ [{handler_name}] prepare_work 异常: {exc}")
         except Exception as exc:
-            print(f"? ?? ActionChain ?? ({handler_name}): {exc}")
+            print(f"❌ 创建 ActionChain 失败 ({handler_name}): {exc}")
     
     
     def get_account(self, handler_name: str) -> Optional[dict]:
