@@ -1,0 +1,353 @@
+{
+    "eventId": 1619490559,
+    "info": {
+      "sportId": 29,
+      "sportName": "Soccer",
+      "leagueCode": "uefa-u19-euro-championship-qualifiers",
+      "leagueName": "UEFA - U19 Euro Championship Qualifiers",
+      "resultingUnit": "Regular",
+      "leagueId": 5983,
+      "container": "Europe",
+      "seriesId": 0
+    },
+    "normal": {
+      "id": 1619490559,
+      "parentId": 1619490561,
+      "time": 1762952400000,
+      "runningState": "2H - 16'",
+      "state": 3,
+      "elapsed": 16,
+      "participants": [
+        {
+          "name": "Ukraine",
+          "englishName": "Ukraine",
+          "type": "HOME",
+          "score": {
+            "match": 1
+          },
+          "redCards": {
+            "match": 0
+          },
+          "yellowCards": 0,
+          "cornerScore": 6,
+          "state": {
+            "goals": 1,
+            "corners": 6,
+            "redCards": 0,
+            "yellowCards": 0
+          }
+        },
+        {
+          "name": "Albania",
+          "englishName": "Albania",
+          "type": "AWAY",
+          "score": {
+            "match": 0
+          },
+          "redCards": {
+            "match": 0
+          },
+          "yellowCards": 1,
+          "cornerScore": 1,
+          "state": {
+            "goals": 0,
+            "corners": 1,
+            "redCards": 0,
+            "yellowCards": 1
+          }
+        }
+      ],
+      "moreBet": 11,
+      "periods": {
+        "0": {
+          "handicap": [
+            {
+              "lineId": 52319729792,
+              "isAlt": true,
+              "homeSpread": "0",
+              "awaySpread": "0",
+              "homeOdds": "1.273",
+              "awayOdds": "3.850",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 3346397991,
+              "isAlt": false,
+              "homeSpread": "-0.25",
+              "awaySpread": "+0.25",
+              "homeOdds": "1.884",
+              "awayOdds": "1.961",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729791,
+              "isAlt": true,
+              "homeSpread": "-0.5",
+              "awaySpread": "+0.5",
+              "homeOdds": "2.470",
+              "awayOdds": "1.564",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729790,
+              "isAlt": true,
+              "homeSpread": "-0.75",
+              "awaySpread": "+0.75",
+              "homeOdds": "3.220",
+              "awayOdds": "1.346",
+              "unavailable": false,
+              "offline": true
+            }
+          ],
+          "overUnder": [
+            {
+              "lineId": 52319729804,
+              "isAlt": true,
+              "overOdds": "3.950",
+              "underOdds": "1.227",
+              "points": "2.5",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729803,
+              "isAlt": true,
+              "overOdds": "3.360",
+              "underOdds": "1.318",
+              "points": "2.25",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729802,
+              "isAlt": true,
+              "overOdds": "2.680",
+              "underOdds": "1.480",
+              "points": "2",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 3346397991,
+              "isAlt": false,
+              "overOdds": "1.943",
+              "underOdds": "1.892",
+              "points": "1.75",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729801,
+              "isAlt": true,
+              "overOdds": "1.632",
+              "underOdds": "2.290",
+              "points": "1.5",
+              "unavailable": false,
+              "offline": true
+            }
+          ],
+          "teamTotals": {
+            "homeLines": [
+              {
+                "lineId": 3346397991,
+                "isAlt": false,
+                "overOdds": "2.000",
+                "underOdds": "1.813",
+                "points": "1.5",
+                "unavailable": false,
+                "offline": true
+              }
+            ],
+            "awayLines": [
+              {
+                "lineId": 3346397991,
+                "isAlt": false,
+                "overOdds": "3.900",
+                "underOdds": "1.253",
+                "points": "0.5",
+                "unavailable": false,
+                "offline": true
+              }
+            ]
+          },
+          "moneyLine": {
+            "lineId": 3346397991,
+            "homePrice": "",
+            "awayPrice": "",
+            "drawPrice": "",
+            "unavailable": false,
+            "offline": true
+          },
+          "indexMainLineHdp": 0,
+          "indexMainLineOU": 0
+        }
+      },
+      "homeTeamType": 0,
+      "awayTeamType": 1,
+      "parlayRestriction": 2,
+      "rotNum": "42638",
+      "resultingUnit": "Regular",
+      "hasLiveStream": false,
+      "hasScoreboard": false,
+      "matchStateType": {
+        "matchPhase": "SecondHalf",
+        "elapsed": "01:01:58"
+      }
+    },
+    "corners": {
+      "id": 1619490561,
+      "parentId": 0,
+      "time": 1762952400000,
+      "runningState": "2H - 16'",
+      "state": 3,
+      "elapsed": 16,
+      "participants": [
+        {
+          "name": "Ukraine (Corners)",
+          "englishName": "Ukraine (Corners)",
+          "type": "HOME",
+          "score": {
+            "match": 6
+          },
+          "redCards": {
+            "match": 0
+          },
+          "yellowCards": 0,
+          "cornerScore": 6
+        },
+        {
+          "name": "Albania (Corners)",
+          "englishName": "Albania (Corners)",
+          "type": "AWAY",
+          "score": {
+            "match": 1
+          },
+          "redCards": {
+            "match": 0
+          },
+          "yellowCards": 1,
+          "cornerScore": 1
+        }
+      ],
+      "moreBet": 7,
+      "periods": {
+        "0": {
+          "handicap": [
+            {
+              "lineId": 52319729424,
+              "isAlt": true,
+              "homeSpread": "0",
+              "awaySpread": "0",
+              "homeOdds": "1.555",
+              "awayOdds": "2.360",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 3346397967,
+              "isAlt": false,
+              "homeSpread": "-0.5",
+              "awaySpread": "+0.5",
+              "homeOdds": "2.010",
+              "awayOdds": "1.769",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729423,
+              "isAlt": true,
+              "homeSpread": "-1.0",
+              "awaySpread": "+1.0",
+              "homeOdds": "2.760",
+              "awayOdds": "1.408",
+              "unavailable": false,
+              "offline": true
+            }
+          ],
+          "overUnder": [
+            {
+              "lineId": 52319729434,
+              "isAlt": true,
+              "overOdds": "2.680",
+              "underOdds": "1.434",
+              "points": "10.5",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 3346397967,
+              "isAlt": false,
+              "overOdds": "2.120",
+              "underOdds": "1.689",
+              "points": "10",
+              "unavailable": false,
+              "offline": true
+            },
+            {
+              "lineId": 52319729433,
+              "isAlt": true,
+              "overOdds": "1.666",
+              "underOdds": "2.150",
+              "points": "9.5",
+              "unavailable": false,
+              "offline": true
+            }
+          ],
+          "teamTotals": {
+            "homeLines": [
+              {
+                "lineId": 3346397967,
+                "isAlt": false,
+                "overOdds": "1.925",
+                "underOdds": "1.840",
+                "points": "7.5",
+                "unavailable": false,
+                "offline": true
+              }
+            ],
+            "awayLines": [
+              {
+                "lineId": 3346397967,
+                "isAlt": false,
+                "overOdds": "1.729",
+                "underOdds": "2.040",
+                "points": "2",
+                "unavailable": false,
+                "offline": true
+              }
+            ]
+          },
+          "moneyLine": {
+            "unavailable": true
+          },
+          "indexMainLineHdp": 0,
+          "indexMainLineOU": 0
+        }
+      },
+      "homeTeamType": 0,
+      "awayTeamType": 1,
+      "parlayRestriction": 2,
+      "rotNum": "42638",
+      "resultingUnit": "Corners",
+      "hasLiveStream": false,
+      "hasScoreboard": false
+    },
+    "bookings": null,
+    "alternateLines": null,
+    "kills": null,
+    "gameMarkets": null,
+    "setMarkets": null,
+    "matchMarkets": null,
+    "match180Markets": null,
+    "pointsMarkets": null,
+    "hitsRunsErrors": null,
+    "specials": null,
+    "version": 1762957192783,
+    "specialVersion": 1762957153914,
+    "update": null,
+    "specialsUpdate": null,
+    "isRefreshAll": true
+  }

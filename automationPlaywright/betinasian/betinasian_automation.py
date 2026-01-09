@@ -2,7 +2,7 @@
 """
 BetInAsian 网站自动化操作实现
 """
-from typing import Any
+from typing import Any, Dict
 import logging
 from ..interface import AutomationBase
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class BetInAsianAutomation(AutomationBase):
     """BetInAsian 网站自动化操作实现"""
 
-    def __init__(self, browser_controller: Any = None, page: Any = None, **kwargs):
+    def __init__(self, browser_controller: Any = None, page: Any = None,config: Dict[str, Any] = None, **kwargs):
         """
         初始化 BetInAsian 自动化操作
 
@@ -30,7 +30,7 @@ class BetInAsianAutomation(AutomationBase):
             page: 页面对象
             **kwargs: 其他配置参数
         """
-        super().__init__(browser_controller, page, **kwargs)
+        super().__init__(browser_controller, page,config, **kwargs)
         logger.info("初始化 BetInAsian 自动化操作")
 
     # ==================== 绑定操作方法 ====================

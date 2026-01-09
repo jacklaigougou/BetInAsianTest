@@ -19,7 +19,7 @@ class AutomationBase(ABC):
     5. SupplementaryOrder - 补充订单
     """
 
-    def __init__(self, browser_controller: Any = None, page: Any = None, **kwargs):
+    def __init__(self, browser_controller: Any = None, page: Any = None, config: Dict[str, Any] = None, **kwargs):
         """
         初始化自动化操作基类
 
@@ -30,7 +30,8 @@ class AutomationBase(ABC):
         """
         self.browser_controller = browser_controller
         self.page = page
-        self.config = kwargs
+        self.config = config
+        self.other = kwargs
 
     @abstractmethod
     async def prepare_work(self, **kwargs) -> Dict[str, Any]:
