@@ -26,11 +26,21 @@ class AutomationBase(ABC):
         Args:
             browser_controller: 浏览器控制器对象
             page: 页面对象 (Playwright Page 或 Puppeteer Page)
-            **kwargs: 其他配置参数
+            config: 配置字典 (包含 handler_name, platform_name, balance 等)
+            **kwargs: 其他配置参数 (兼容旧接口)
         """
         self.browser_controller = browser_controller
         self.page = page
-        self.config = config
+        self.config = config or {}
+
+        # ✅ 从 config 提取 handler_name (优先)
+        self.handler_name = self.config.get('handler_name', 'unknown')
+
+        # ✅ 兼容旧架构: 也支持从 kwargs 提取
+        if 'handler_name' in kwargs:
+            self.handler_name = kwargs['handler_name']
+
+        # 保存其他参数
         self.other = kwargs
 
     @abstractmethod
