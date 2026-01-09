@@ -28,13 +28,13 @@ class Pin888POM:
         Returns:
             str: 余额数值,如 "2.31",失败返回 None
         """
-        from src.utils import load_js_file
+        from utils.js_loader import get_js_loader
         import json
         import time
 
         try:
             # 加载 JS 文件
-            js_code = load_js_file(
+            js_code = get_js_loader(
                 file_name='Request_accountBalance.js',
                 platform_name='pin888'
             )

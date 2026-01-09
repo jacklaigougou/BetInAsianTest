@@ -2,7 +2,7 @@
 PIN888 平台 - 从 AllEvents 数据中解析并匹配比赛事件
 """
 
-from src.utils.leagueName import transform_league_name
+from utils.leagueName import transform_league_name
 
 
 def parse_event_from_all_events(all_events, spider_home, spider_away):

@@ -1,25 +1,25 @@
-from src.automation.base import BaseActionChain
-from src.utils import load_js_file
-from src.automation.handlers.pin888.handler.pom import Pin888POM
+from automation.base import BaseActionChain
+from utils import load_js_file
+from automationPlaywright.pin888.handler.pom import Pin888POM
 from config.settings import Settings
-from src.core.config import config
+from core.config import config
 import aiohttp
 import asyncio
 
-from src.utils.leagueName import transform_league_name
-# from src.automation.mapping import Mapping
-from src.automation.handlers.pin888.handler.findHandicap import find_handicap
-from src.automation.handlers.pin888.handler.mappingBetParamsToIds import map_bet_params_to_ids
-from src.automation.handlers.pin888.handler.arbitrageRange import calculate_arbitrage_range
-from src.automation.handlers.pin888.jsCodeExecutors import subscribe_events_detail_euro, unsubscribe_events_detail_euro, subscribe_live_euro_odds
-from src.automation.handlers.pin888.responseAnalysis import parse_event_from_all_events, parse_team_names_from_detail_data, find_odds_from_detail_data
-from src.automation.handlers.pin888.responseAnalysis.findOddsWithRange import find_odds_from_detail_data_with_range
-from src.automation.handlers.pin888.mapping import map_handicap_full
+from utils.leagueName import transform_league_name
+# from automation.mapping import Mapping
+from automationPlaywright.pin888.handler.findHandicap import find_handicap
+from automationPlaywright.pin888.handler.mappingBetParamsToIds import map_bet_params_to_ids
+from automationPlaywright.pin888.handler.arbitrageRange import calculate_arbitrage_range
+from automationPlaywright.pin888.jsCodeExecutors import subscribe_events_detail_euro, unsubscribe_events_detail_euro, subscribe_live_euro_odds
+from automationPlaywright.pin888.responseAnalysis import parse_event_from_all_events, parse_team_names_from_detail_data, find_odds_from_detail_data
+from automationPlaywright.pin888.responseAnalysis.findOddsWithRange import find_odds_from_detail_data_with_range
+from automationPlaywright.pin888.mapping import map_handicap_full
 import time
 import json
 import os
 from datetime import datetime
-from src.automation.handlers.pin888.handler.timeAnalysis import analyze_remaining_time
+from automationPlaywright.pin888.handler.timeAnalysis import analyze_remaining_time
 
 
 def save_event_detail_data(event_detail_data, prefix="event_detail"):
@@ -324,7 +324,7 @@ class ActionChain(BaseActionChain):
             if opponent_amount and opponent_odds and our_odds:
                 # 有对手信息,计算最优套利金额
                 try:
-                    from src.automation.handlers.sportsbet.executors.executor_4 import calculate_optimal_betting_amount
+                    from automationPlaywright.sportsbet.executors.executor_4 import calculate_optimal_betting_amount
 
                     optimal_amount = calculate_optimal_betting_amount(
                         opponent_amount=float(opponent_amount),

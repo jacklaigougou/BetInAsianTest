@@ -33,7 +33,7 @@ class Settings:
             'platform_name': 'betinasian',
             'match_url':'betinasia.com',
             'start_url': 'https://black.betinasia.com/sportsbook/basketball?group=in+running',
-            'folder_addr': 'src.automation.betinasian',   # 文件夹地址
+            'folder_addr': 'automationPlaywright.betinasian',   # 文件夹地址
             'file_name': 'betinasian_automation',  # 文件名
             'class_name': 'BetInAsianAutomation',  # 类名
 
@@ -44,7 +44,7 @@ class Settings:
             'platform_name': 'pin888',
             'match_url':'pin880.com',
             'start_url': 'https://www.pin880.com/en/standard/soccer/live',
-            'folder_addr': 'src.automation.pin888',  # 文件夹地址
+            'folder_addr': 'automationPlaywright.pin888',  # 文件夹地址
             'file_name': 'pin888_automation',  # 文件名
             'class_name': 'Pin888Automation',  # 类名
             'js_base_path': os.path.join(_AUTOMATION_DIR, "pin888", "jsCode")

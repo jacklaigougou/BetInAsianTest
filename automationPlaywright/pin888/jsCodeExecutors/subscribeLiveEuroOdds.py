@@ -3,7 +3,7 @@ PIN888 平台 - LIVE_EURO_ODDS 订阅相关的 JS 代码执行器
 """
 
 import asyncio
-from src.utils import load_js_file
+from utils.js_loader import get_js_loader
 import time
 
 async def subscribe_live_euro_odds(page, sport_id, period_num):
@@ -75,7 +75,7 @@ async def subscribe_live_euro_odds(page, sport_id, period_num):
         print(f"🧹 [PIN888] 已清空旧数据")
 
         # 4. 加载 JS 脚本
-        js_code = load_js_file(
+        js_code = get_js_loader(
             file_name='Subscribe_live_euro_odds.js',
             platform_name='pin888'
         )

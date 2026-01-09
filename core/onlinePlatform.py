@@ -3,7 +3,7 @@ OnlinePlatform - 在线平台账号管理单例
 负责接收并存储 status="scheduling" 的账号数据
 """
 from typing import Dict, Optional
-from playwright.async_api import async_playwright, Page
+from playwright.async_api import Page
 import importlib
 import sys
 import os
@@ -13,6 +13,7 @@ import asyncio
 
 # 添加 fingerBrowser 到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+from browserControler import BrowserControler
 from fingerBrowser import FingerBrowser
 
 
@@ -259,140 +260,121 @@ class OnlinePlatform:
         return added_count
 
     async def _create_page_and_ac(self, handler_name: str):
-        """
-        创建 page 对象和 ActionChain 对象
-        直接修改 self._accounts[handler_name] 中的数据
-
-        Args:
-            handler_name: 账号名称
-        """
+        """?? page ? ActionChain."""
         account = self._accounts.get(handler_name)
         if not account:
-            print(f"❌ 账号 {handler_name} 不存在")
+            print(f"? ?? {handler_name} ???")
             return
 
-        # ✅ 关键修复1: 检查是否已经创建过 page 和 ac,避免重复构造
         if account.get('page') and account.get('ac'):
-            # print(f"ℹ️ [{handler_name}] page 和 ac 已存在,跳过重复创建")
             return
 
         port = account.get('port')
-        platform_name = account.get('platform_name')
         folder_addr = account.get('folder_addr')
         file_name = account.get('file_name')
         class_name = account.get('class_name')
         browser_id = account.get('ads_id')
 
-        # ✅ 关键修复2: port 参数一定不存在,直接从 FingerBrowser 获取
+        if not browser_id:
+            print(f"?? ?? {handler_name} ?? browser_id (ads_id),???? page")
+            print("   ??: ?? WebSocket ????? 'ads_id' ??")
+            return
+
         if not port:
-            print(f"🔍 [{handler_name}] port 不存在或首次初始化,从 FingerBrowser 获取浏览器信息...")
+            print(f"?? [{handler_name}] port ?????????,??? FingerBrowser ???????...")
             try:
                 browser_info = await self._finger_browser.get_single_browser_info(
                     browser_id=browser_id,
-                    auto_launch=True  # 自动启动浏览器(如果未运行)
+                    auto_launch=True
                 )
-                # 更新 account 字典
-                account['port'] = browser_info.get('debug_port')
-                account['ws_url'] = browser_info.get('ws_url')
-                port = account['port']
-
-                print(f"✅ [{handler_name}] 获取浏览器信息成功: port={port}, ws_url={account.get('ws_url')}")
-            except Exception as e:
-                print(f"❌ [{handler_name}] 获取浏览器信息失败: {e}")
+            except Exception as exc:
+                print(f"? [{handler_name}] ?????????: {exc}")
                 return
 
+            account['port'] = browser_info.get('debug_port')
+            account['ws_url'] = browser_info.get('ws_url')
+            port = account['port']
+
         if not port:
-            print(f"⚠️ 账号 {handler_name} 没有 port,跳过创建 page")
+            print(f"?? ?? {handler_name} ?????? port,???? page")
             return
 
-        if not browser_id:
-            print(f"⚠️ 账号 {handler_name} 没有 browser_id (ads_id),跳过创建 page")
-            print(f"   提示: 请在 WebSocket 消息中添加 'ads_id' 字段")
-            return
+        ws_url = account.get('ws_url')
+        connect_model = 'ws_url' if ws_url else 'port'
 
-        # 1. 创建 page 对象 (使用 FingerBrowser 统一接口)
         try:
-            # 使用 FingerBrowser.connect_cdp() 连接浏览器
-            # 必须使用 browser_id (ads_id) 而不是 handler_name
-            playwright = await async_playwright().start()
-            browser = await playwright.chromium.connect_over_cdp(
-                f"http://127.0.0.1:{port}"
+            browser_object = await self._finger_browser.get_cdp_object(
+                ws_url=ws_url,
+                port=port,
+                tool='playwright',
+                model=connect_model
             )
-
-            print(f"🔍 [{handler_name}] browser: {browser}")
-            context = browser.contexts[0]
-
-            # 查找匹配 match_url 的页面
-            match_url = account.get('match_url')
-            page = None
-
-            for p in context.pages:
-                if match_url and match_url in p.url:
-                    page = p
-                    print(f"✅ 已找到匹配页面: {handler_name} (url: {p.url})")
-                    break
-
-            if not page:
-                # 如果没找到匹配的,创建新页面并导航到 start_url
-                start_url = account.get('start_url')
-                if start_url:
-                    print(f"🌐 [{handler_name}] 未找到匹配页面,创建新页面并导航到: {start_url}")
-                    page = await context.new_page()
-                    try:
-                        await page.goto(start_url, wait_until='domcontentloaded', timeout=30000)
-                        print(f"✅ [{handler_name}] 成功导航到: {page.url}")
-                    except Exception as e:
-                        print(f"⚠️ [{handler_name}] 导航失败: {e}, 继续使用空白页")
-                else:
-                    # 没有 start_url,使用第一个页面
-                    page = context.pages[0] if context.pages else None
-                    if not page:
-                        print(f"❌ [{handler_name}] 没有可用的页面")
-                        return
-
-            # 将 page 存储到 account 中
-            account['page'] = page
-
-        except Exception as e:
-            print(f"❌ 创建 page 失败 ({handler_name}): {e}")
-            import traceback
-            traceback.print_exc()
+            browser_controller = BrowserControler(browser_object, tool='playwright')
+        except Exception as exc:
+            print(f"? [{handler_name}] ???????: {exc}")
             return
 
-        # 2. 动态导入 ActionChain 类
+        match_url = account.get('match_url')
+        page = None
+
+        if match_url:
+            try:
+                result = await browser_controller.check_url_exists(match_url)
+                if result.get('exists'):
+                    page = result.get('page')
+                    print(f"? ???????: {handler_name} (url: {result.get('url')})")
+            except Exception as exc:
+                print(f"?? [{handler_name}] ??????: {exc}")
+
+        if not page:
+            start_url = account.get('start_url')
+            if not start_url:
+                print(f"?? ?? {handler_name} ?? start_url,???? page")
+                return
+
+            try:
+                create_result = await browser_controller.create_new_page(
+                    start_url,
+                    wait_until='domcontentloaded',
+                    timeout=30000
+                )
+            except Exception as exc:
+                print(f"? [{handler_name}] ??????: {exc}")
+                return
+
+            if not create_result.get('success'):
+                print(f"?? [{handler_name}] ??????: {create_result.get('message')}")
+                return
+
+            page = create_result.get('page')
+            print(f"? [{handler_name}] ????? {create_result.get('url')}")
+
+        account['browser_controller'] = browser_controller
+        account['page'] = page
+
         if not all([folder_addr, file_name, class_name]):
-            print(f"⚠️ 账号 {handler_name} 缺少 ActionChain 配置,跳过创建 ac")
+            print(f"?? ?? {handler_name} ?? ActionChain ??,???? ac")
             return
 
         try:
-            # 动态导入: from folder_addr.file_name import class_name
             module = importlib.import_module(f"{folder_addr}.{file_name}")
             ActionChainClass = getattr(module, class_name)
-
-            # 3. 创建 ActionChain 实例,传递 ws_client
             ac = ActionChainClass(online_platform=account, ws_client=self._ws_client)
-
-            # 将 ac 存储到 account 中
             account['ac'] = ac
-            # print(f"✅ 已创建 ActionChain: {handler_name} (类: {class_name})")
-            print(f"🔍 [{handler_name}] ac: {ac}")
-            # 4. 调用 prepare_work 初始化 handler_info
+            print(f"?? [{handler_name}] ac: {ac}")
+
             if hasattr(ac, 'prepare_work'):
                 try:
-                    print(f"🔧 执行 prepare_work 初始化...")
-                    import asyncio
+                    print("?? ?? prepare_work ???...")
                     result = await ac.prepare_work()
-                    if result:
-                        # print(f"✅ prepare_work 执行成功")
-                        pass
-                    else:
-                        print(f"⚠️ prepare_work 未获取到数据")
-                except Exception as e:
-                    print(f"⚠️ prepare_work 执行失败: {e}")
-
-        except Exception as e:
-            print(f"❌ 创建 ActionChain 失败 ({handler_name}): {e}")
-
+                    if not result:
+                        print("?? prepare_work ??????")
+                except Exception as exc:
+                    print(f"?? prepare_work ????: {exc}")
+        except Exception as exc:
+            print(f"? ?? ActionChain ?? ({handler_name}): {exc}")
+    
+    
     def get_account(self, handler_name: str) -> Optional[dict]:
         """获取指定账号 (包含 page 和 ac)"""
         return self._accounts.get(handler_name)
