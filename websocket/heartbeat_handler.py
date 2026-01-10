@@ -36,6 +36,14 @@ class HeartbeatHandler:
         启动心跳循环任务
         作为后台任务独立运行
         """
+        # 如果已有心跳任务在运行，先取消
+        if self.heartbeat_task and not self.heartbeat_task.done():
+            self.heartbeat_task.cancel()
+            try:
+                await self.heartbeat_task
+            except asyncio.CancelledError:
+                pass
+
         self.heartbeat_task = asyncio.create_task(
             self._heartbeat_loop()
         )

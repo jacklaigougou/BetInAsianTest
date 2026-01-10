@@ -28,7 +28,11 @@
       "Bash(move order_query.js orders )",
       "Bash(move order_state_machine.js orders )",
       "Bash(move bet_adapter.js orders )",
-      "Bash(move bet_store.js orders)"
+      "Bash(move bet_store.js orders)",
+      "Bash(where:*)",
+      "Bash(C:UsersAdministratorAppDataLocalMicrosoftWindowsAppspython.exe \"c:\\Users\\Administrator\\Desktop\\PyPJT\\发给亨亨\\重要\\BetInAsian\\test_soccer_mapping.py\")",
+      "Bash(cmd /c:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

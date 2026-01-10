@@ -14,6 +14,7 @@ async def handle_dispatch_message(app, message: Dict[str, Any]) -> None:
         case 'betting_order' | 'betting':
             app.task_builder.build_betting_order_task(message)
         case 'new_order':
+            print('收到 dispatch --> new_order: ',message)
             app.task_builder.build_new_order_task(message)
         case 'stop_pin888_cycle':
             _handle_stop_cycle(app, message)
@@ -22,7 +23,7 @@ async def handle_dispatch_message(app, message: Dict[str, Any]) -> None:
         case 'single_side_success':
             app.task_builder.build_single_side_success_task(message)
         case 'onlineAccount':
-            print('收到 dispatch --> onlineAccount: ',message)
+            # print('收到 dispatch --> onlineAccount: ',message)
             await app.online_platform.update_accounts(message)
         case 'single_side_failure':
             app.task_builder.build_single_side_failure_task(message)

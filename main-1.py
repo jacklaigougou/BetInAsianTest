@@ -292,7 +292,7 @@ async def main():
                 logger.info("🧪 BettingOrder 测试完成")
                 logger.info("="*60 + "\n")
 
-                return
+                
                 
                 # ========== 测试 GetPrice 功能 ==========
                 if betslip_result and betslip_result.get('success'):

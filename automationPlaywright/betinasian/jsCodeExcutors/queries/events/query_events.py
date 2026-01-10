@@ -41,17 +41,50 @@ async def query_betinasian_events(
         True
     """
     try:
+        # 🔍 调试：先检查 window.queryData 是否存在
+        logger.info(f"🔍 检查 window.queryData 是否存在...")
+        check_result = await page.evaluate('''
+            () => {
+                return {
+                    queryData_exists: typeof window.queryData !== 'undefined',
+                    inRunningSport_exists: typeof window.queryData?.inRunningSport === 'function',
+                    bySport_exists: typeof window.queryData?.bySport === 'function'
+                };
+            }
+        ''')
+        logger.info(f"  - queryData 存在: {check_result.get('queryData_exists')}")
+        logger.info(f"  - inRunningSport 存在: {check_result.get('inRunningSport_exists')}")
+        logger.info(f"  - bySport 存在: {check_result.get('bySport_exists')}")
+
+        if not check_result.get('queryData_exists'):
+            logger.error("❌ window.queryData 不存在！WebSocket Hook 可能未正确注入")
+            return []
+
         # 根据参数选择查询方法
         if in_running_only:
+            if not check_result.get('inRunningSport_exists'):
+                logger.error("❌ window.queryData.inRunningSport 函数不存在！")
+                return []
             js_code = f'window.queryData.inRunningSport("{sport_type}")'
         else:
+            if not check_result.get('bySport_exists'):
+                logger.error("❌ window.queryData.bySport 函数不存在！")
+                return []
             # 查询所有比赛 (需要指定 period,这里默认使用 ht)
             js_code = f'window.queryData.bySport("{sport_type}_ht")'
 
         logger.info(f"查询 betinasian 比赛: {js_code}")
 
-        # 执行查询
-        events = await page.evaluate(js_code)
+        # 执行查询（使用 asyncio.wait_for 添加超时保护）
+        import asyncio
+        try:
+            events = await asyncio.wait_for(page.evaluate(js_code), timeout=5.0)  # 5秒超时
+        except asyncio.TimeoutError:
+            logger.error(f"❌ page.evaluate 超时 (5秒)")
+            return []
+        except Exception as eval_error:
+            logger.error(f"❌ page.evaluate 失败: {eval_error}")
+            return []
 
         if events is None:
             logger.warning(f"未找到 {sport_type} 比赛数据")
@@ -61,7 +94,7 @@ async def query_betinasian_events(
         return events
 
     except Exception as e:
-        logger.error(f"查询 betinasian 比赛失败: {e}")
+        logger.error(f"查询 betinasian 比赛失败: {e}", exc_info=True)
         return []
 
 

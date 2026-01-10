@@ -53,15 +53,17 @@ BetInAsian Market Types (Soccer):
 
 # Spider Market ID to BetInAsian Market Mapping
 SPIDER_TO_BETINASIAN_MARKET = {
-    # Full Time Money Line (1X2) -> ml
+    # Full Time Money Line (1X2) -> Simple format (same as 11/13)
     "1": {
-        "betinasian_market": "ml",
+        "betinasian_market": None,  # 简化格式不需要 market
         "betinasian_side": "h",  # home (1)
+        "simple_format": True,  # 标记为简化格式
         "description": "1X2 - Home Win"
     },
     "2": {
-        "betinasian_market": "ml",
+        "betinasian_market": None,
         "betinasian_side": "a",  # away (2)
+        "simple_format": True,
         "description": "1X2 - Away Win"
     },
 
@@ -97,78 +99,94 @@ SPIDER_TO_BETINASIAN_MARKET = {
         "has_line": True
     },
 
-    # Both Teams to Score -> btts
+    # Both Teams to Score -> score,both format
     "8": {
-        "betinasian_market": "btts",
-        "betinasian_side": "y",  # yes
+        "betinasian_market": "score",
+        "betinasian_side": "both",  # both teams score
+        "custom_format": "score_both",  # 自定义格式标记
         "description": "Both Teams to Score - Yes"
     },
     "9": {
-        "betinasian_market": "btts",
-        "betinasian_side": "n",  # no
+        "betinasian_market": "score",
+        "betinasian_side": "both",
+        "betinasian_extra": "no",  # 额外参数
+        "custom_format": "score_both_no",  # 自定义格式标记
         "description": "Both Teams to Score - No"
     },
 
-    # 1X2 (Same as ml, but explicit)
+    # 1X2 (Simplified format: "for,{side}")
     "11": {
-        "betinasian_market": "ml",
+        "betinasian_market": None,  # 简化格式不需要 market
         "betinasian_side": "h",  # home (1)
+        "simple_format": True,  # 标记为简化格式
         "description": "1X2 - Home Win"
     },
     "12": {
-        "betinasian_market": "ml",
-        "betinasian_side": "x",  # draw (X)
+        "betinasian_market": None,
+        "betinasian_side": "d",  # draw (X) - 改为 'd'
+        "simple_format": True,
         "description": "1X2 - Draw"
     },
     "13": {
-        "betinasian_market": "ml",
+        "betinasian_market": None,
         "betinasian_side": "a",  # away (2)
+        "simple_format": True,
         "description": "1X2 - Away Win"
     },
 
-    # Double Chance -> dc
+    # Double Chance -> dc (format: "for,dc,{side1},{side2}")
     "14": {
         "betinasian_market": "dc",
-        "betinasian_side": "1x",  # home or draw
+        "betinasian_side": "h",  # home
+        "betinasian_side2": "d",  # draw
+        "custom_format": "dc_two_sides",  # 双边格式
         "description": "Double Chance - 1X"
     },
     "15": {
         "betinasian_market": "dc",
-        "betinasian_side": "x2",  # draw or away
+        "betinasian_side": "a",  # away
+        "betinasian_side2": "d",  # draw
+        "custom_format": "dc_two_sides",
         "description": "Double Chance - X2"
     },
     "16": {
         "betinasian_market": "dc",
-        "betinasian_side": "12",  # home or away
+        "betinasian_side": "h",  # home
+        "betinasian_side2": "a",  # away
+        "custom_format": "dc_two_sides",
         "description": "Double Chance - 12"
     },
 
-    # Asian Handicap -> ah
+    # Asian Handicap -> ah (IR format: "for,ir,0,0,ah,{side},{line_id}")
     "17": {
         "betinasian_market": "ah",
         "betinasian_side": "h",  # home
         "description": "Asian Handicap - Home",
-        "has_line": True  # has line value (e.g., -0.5, -1.0)
+        "has_line": True,  # has line value (e.g., -0.5, -1.0)
+        "use_ir_format": True  # 使用 IR 格式
     },
     "18": {
         "betinasian_market": "ah",
         "betinasian_side": "a",  # away
         "description": "Asian Handicap - Away",
-        "has_line": True
+        "has_line": True,
+        "use_ir_format": True
     },
 
-    # Over/Under (Total Goals) -> ahou
+    # Over/Under (Total Goals) -> ahover/ahunder (IR format: "for,ir,0,0,{ahover|ahunder},{line_id}")
     "19": {
-        "betinasian_market": "ahou",
-        "betinasian_side": "o",  # over
+        "betinasian_market": "ahover",  # 改为 ahover
+        "betinasian_side": None,  # Over/Under 不使用 side
         "description": "Over/Under - Over",
-        "has_line": True  # has line value (e.g., 2.5, 3.0)
+        "has_line": True,  # has line value (e.g., 2.5, 3.0)
+        "use_ir_format": True  # 使用 IR 格式
     },
     "20": {
-        "betinasian_market": "ahou",
-        "betinasian_side": "u",  # under
+        "betinasian_market": "ahunder",  # 改为 ahunder
+        "betinasian_side": None,  # Over/Under 不使用 side
         "description": "Over/Under - Under",
-        "has_line": True
+        "has_line": True,
+        "use_ir_format": True
     },
 
     # Team1 Over/Under -> t1ahou
@@ -199,15 +217,17 @@ SPIDER_TO_BETINASIAN_MARKET = {
         "has_line": True
     },
 
-    # Odd/Even -> oe
+    # Odd/Even -> odd/even format (simple)
     "25": {
-        "betinasian_market": "oe",
-        "betinasian_side": "o",  # odd
+        "betinasian_market": "odd",
+        "betinasian_side": None,  # no side needed
+        "custom_format": "odd_even_simple",  # 简化格式
         "description": "Odd/Even - Odd"
     },
     "26": {
-        "betinasian_market": "oe",
-        "betinasian_side": "e",  # even
+        "betinasian_market": "even",
+        "betinasian_side": None,  # no side needed
+        "custom_format": "odd_even_simple",
         "description": "Odd/Even - Even"
     },
 
@@ -289,6 +309,9 @@ def parse_spider_market(spider_market_id: str, handicap_value: float = None):
             "description": "1X2 - Home Win"
         }
     """
+    # 确保 spider_market_id 是字符串类型
+    spider_market_id = str(spider_market_id)
+
     if spider_market_id not in SPIDER_TO_BETINASIAN_MARKET:
         return None
 

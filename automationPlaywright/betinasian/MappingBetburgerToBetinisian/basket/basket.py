@@ -153,16 +153,21 @@ def parse_spider_market(spider_market_id: str, handicap_value: float = None):
             "description": "Over/Under - Over"
         }
     """
+    # 确保 spider_market_id 是字符串类型
+    spider_market_id = str(spider_market_id)
+
     if spider_market_id not in SPIDER_TO_BETINASIAN_MARKET:
         return None
 
     mapping = SPIDER_TO_BETINASIAN_MARKET[spider_market_id].copy()
+    
+
 
     # Convert handicap value to line_id if needed
     if mapping.get("has_line") and handicap_value is not None:
         # Convert to integer (BetInAsian line_id format)
         # e.g., -5.5 -> -22, 170 -> 680, 165.5 -> 662
-        mapping["line_id"] = int(handicap_value * 4)
+        mapping["line_id"] = int(float(handicap_value) * 4)
 
     # Remove internal flag
     mapping.pop("has_line", None)

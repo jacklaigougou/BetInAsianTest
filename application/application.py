@@ -81,7 +81,9 @@ class Application:
             case 'electron' | 'logWindow':
                 await handle_electron_message(self, message)
             case 'dispatch':
-                await handle_dispatch_message(self, message)
+                # 不阻塞 WebSocket 消息循环：创建后台任务处理 dispatch 消息
+                # 这样可以继续接收 PMM 数据等后续消息
+                asyncio.create_task(handle_dispatch_message(self, message))
             case 'server' | 'websocket':
                 print('收到 server 消息:', message)
             case _:

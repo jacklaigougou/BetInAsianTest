@@ -4,12 +4,24 @@ BetInAsian Bet Type String Builder
 
 Constructs BetInAsian bet_type strings from mapping dictionaries.
 
-Bet Type Format:
-- With line_id: "for,{market},{side},{line_id}"
-  Example: "for,ah,h,-22" (Asian Handicap -5.5 for Home)
+Bet Type Formats:
+1. Simple format (Soccer 1X2): "for,{side}"
+   Example: "for,h" (Home Win)
 
-- Without line_id: "for,{market},{side}"
-  Example: "for,ml,h" (Money Line for Home)
+2. Custom formats (Soccer special cases):
+   - Both Teams Score: "for,score,both" or "for,score,both,no"
+   - Odd/Even: "for,odd" or "for,even"
+   - Double Chance: "for,dc,{side1},{side2}" (e.g., "for,dc,h,d")
+
+3. IR format (Soccer Asian Handicap, Over/Under): "for,ir,0,0,{market},{side},{line_id}"
+   Example: "for,ir,0,0,ah,h,-2" (Asian Handicap -0.5 for Home)
+   Special: Over/Under without side: "for,ir,0,0,ahover,10"
+
+4. Standard format (Basketball, etc.): "for,{market},{side},{line_id}"
+   Example: "for,ah,h,-22" (Asian Handicap -5.5 for Home)
+
+5. Standard format without line: "for,{market},{side}"
+   Example: "for,ml,h" (Money Line for Home)
 """
 
 from typing import Dict, Any, Optional
@@ -25,15 +37,40 @@ def build(mapping: Dict[str, Any]) -> Optional[str]:
                 "betinasian_market": "ah",     # Market type
                 "betinasian_side": "h",        # Bet side
                 "line_id": -22,                # Line ID (optional)
+                "simple_format": True,         # Simple format flag (optional)
+                "use_ir_format": True,         # IR format flag (optional)
                 "description": "..."           # Description (ignored)
             }
 
     Returns:
-        bet_type string (e.g., "for,ah,h,-22" or "for,ml,h")
-        or None if mapping is invalid
+        bet_type string or None if mapping is invalid
 
     Examples:
-        >>> # Asian Handicap with line
+        >>> # Simple format (Soccer 1X2)
+        >>> mapping = {"betinasian_side": "h", "simple_format": True}
+        >>> build(mapping)
+        "for,h"
+
+        >>> # IR format with side (Soccer Asian Handicap)
+        >>> mapping = {
+        ...     "betinasian_market": "ah",
+        ...     "betinasian_side": "h",
+        ...     "line_id": -2,
+        ...     "use_ir_format": True
+        ... }
+        >>> build(mapping)
+        "for,ir,0,0,ah,h,-2"
+
+        >>> # IR format without side (Soccer Over/Under)
+        >>> mapping = {
+        ...     "betinasian_market": "ahover",
+        ...     "line_id": 10,
+        ...     "use_ir_format": True
+        ... }
+        >>> build(mapping)
+        "for,ir,0,0,ahover,10"
+
+        >>> # Standard format with line (Basketball)
         >>> mapping = {
         ...     "betinasian_market": "ah",
         ...     "betinasian_side": "h",
@@ -42,27 +79,72 @@ def build(mapping: Dict[str, Any]) -> Optional[str]:
         >>> build(mapping)
         "for,ah,h,-22"
 
-        >>> # Money Line without line
+        >>> # Standard format without line (Basketball Money Line)
         >>> mapping = {
         ...     "betinasian_market": "ml",
         ...     "betinasian_side": "a"
         ... }
         >>> build(mapping)
         "for,ml,a"
-
-        >>> # Over/Under with line
-        >>> mapping = {
-        ...     "betinasian_market": "ahou",
-        ...     "betinasian_side": "o",
-        ...     "line_id": 680
-        ... }
-        >>> build(mapping)
-        "for,ahou,o,680"
     """
     if not mapping:
         return None
 
-    # Extract required fields
+    # 1. Simple format (Soccer 1X2: "for,{side}")
+    if mapping.get('simple_format'):
+        side = mapping.get('betinasian_side')
+        if not side:
+            return None
+        return f"for,{side}"
+
+    # 2. Custom formats (Soccer special cases)
+    custom_format = mapping.get('custom_format')
+
+    if custom_format == 'score_both':
+        # "for,score,both"
+        return "for,score,both"
+
+    elif custom_format == 'score_both_no':
+        # "for,score,both,no"
+        return "for,score,both,no"
+
+    elif custom_format == 'odd_even_simple':
+        # "for,odd" or "for,even"
+        market = mapping.get('betinasian_market')
+        if not market:
+            return None
+        return f"for,{market}"
+
+    elif custom_format == 'dc_two_sides':
+        # "for,dc,{side1},{side2}"
+        market = mapping.get('betinasian_market')
+        side1 = mapping.get('betinasian_side')
+        side2 = mapping.get('betinasian_side2')
+        if not market or not side1 or not side2:
+            return None
+        return f"for,{market},{side1},{side2}"
+
+    # 3. IR format (Soccer Asian Handicap, Over/Under)
+    if mapping.get('use_ir_format'):
+        market = mapping.get('betinasian_market')
+        side = mapping.get('betinasian_side')
+        line_id = mapping.get('line_id')
+
+        if not market:
+            return None
+
+        # Over/Under 特殊处理（无 side）
+        if market in ['ahover', 'ahunder']:
+            if line_id is None:
+                return None
+            return f"for,ir,0,0,{market},{line_id}"
+        else:
+            # Asian Handicap 等（有 side）
+            if not side or line_id is None:
+                return None
+            return f"for,ir,0,0,{market},{side},{line_id}"
+
+    # 4. Standard format (Basketball, etc.)
     market = mapping.get('betinasian_market')
     side = mapping.get('betinasian_side')
 

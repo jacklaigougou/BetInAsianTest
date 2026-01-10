@@ -122,16 +122,32 @@ class TaskBuilder:
             print(f"▶️ [{task_id}] 开始执行: {handler_name}")
 
             # 获取 ActionChain
+            print(f"  🔍 [{order_id}] 获取 ActionChain: {handler_name}")
             ac = self.online_platform.get_action_chain(handler_name)
-            
+
+            print(f"  🔍 [{order_id}] ac 对象: {ac}")
+            print(f"  🔍 [{order_id}] ac 类型: {type(ac)}")
+
             if not ac:
                 raise Exception(f"未找到 ActionChain: {handler_name}")
 
+            # 检查 GetOdd 方法是否存在
+            print(f"  🔍 [{order_id}] 检查 GetOdd 方法...")
+            print(f"  🔍 [{order_id}] hasattr(ac, 'GetOdd'): {hasattr(ac, 'GetOdd')}")
+            if hasattr(ac, 'GetOdd'):
+                print(f"  🔍 [{order_id}] GetOdd 类型: {type(ac.GetOdd)}")
+                print(f"  🔍 [{order_id}] GetOdd 是协程: {asyncio.iscoroutinefunction(ac.GetOdd)}")
+
             # 直接调用 GetOdd
             print(f"  → [{order_id}] {handler_name} 开始获取赔率")
+            print(f"  🔍 [{order_id}] 调用参数: {data}")
+
             try:
+                print(f"  🔍 [{order_id}] 正在调用 ac.GetOdd...")
                 result = await ac.GetOdd(dispatch_message=data)
+                print(f"  🔍 [{order_id}] GetOdd 返回: {result}")
             except Exception as e:
+                print(f"  ❌ [{order_id}] GetOdd 异常: {e}")
                 import traceback
                 traceback.print_exc()
                 result = {
@@ -155,8 +171,13 @@ class TaskBuilder:
                     'success':False,
                 }
 
-            
+
+            print(f"  ✅ [{order_id}] GetOdd 执行完成，准备发送结果到 dispatch")
+            print(f"  📤 [{order_id}] 结果数据: success={result.get('success')}")
+
             await self._send_to_dispatch_odd_result(result)
+
+            print(f"  ✅ [{order_id}] 结果已发送到 dispatch")
 
 
         except Exception as e:
@@ -473,13 +494,24 @@ class TaskBuilder:
         Args:
             data: 要发送的数据
         """
+        print(f"  📨 [_send_to_dispatch_odd_result] 准备发送消息...")
         message = {
             "type": "odd_result",
             "from": "automation",
             "to": "dispatch",
             "data": data
         }
-        await self.ws_client.send(message)
+        print(f"  📨 [_send_to_dispatch_odd_result] 消息内容: type={message['type']}, data_keys={list(data.keys())}")
+        print(f"  📨 [_send_to_dispatch_odd_result] 调用 ws_client.send()...")
+
+        try:
+            await self.ws_client.send(message)
+            print(f"  ✅ [_send_to_dispatch_odd_result] 消息发送成功")
+        except Exception as e:
+            print(f"  ❌ [_send_to_dispatch_odd_result] 消息发送失败: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
 
     async def _send_to_dispatch_betting_result(self, data: dict):

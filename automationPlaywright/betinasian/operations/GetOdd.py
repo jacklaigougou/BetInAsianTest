@@ -57,6 +57,7 @@ async def get_event_key_by_team_name(
     logger.info(f"开始匹配比赛: {spider_home} vs {spider_away} ({spider_sport_type})")
 
     # 1. 查询 betinasian 比赛列表
+    logger.info(f"📡 查询 BetInAsian 比赛列表...")
     events = await query_betinasian_events(
         page=self.page,
         sport_type=spider_sport_type,
@@ -64,14 +65,26 @@ async def get_event_key_by_team_name(
     )
 
     if not events:
+        logger.error(f"❌ 未找到 {spider_sport_type} 正在进行的比赛")
         return {
             'success': False,
             'message': f'未找到 {spider_sport_type} 正在进行的比赛'
         }
 
-    logger.info(f"从 betinasian 获取到 {len(events)} 场比赛")
+    logger.info(f"✅ 从 BetInAsian 获取到 {len(events)} 场比赛")
+
+    # 显示前5场比赛
+    if len(events) > 0:
+        logger.info(f"\n前 {min(5, len(events))} 场比赛:")
+        for i, evt in enumerate(events[:5], 1):
+            logger.info(f"  [{i}] {evt.get('home')} vs {evt.get('away')} ({evt.get('competition_name')})")
 
     # 2. 队名匹配 (先精确匹配,失败后模糊匹配)
+    logger.info(f"\n🔍 开始队名匹配...")
+    logger.info(f"  - 目标主队: {spider_home}")
+    logger.info(f"  - 目标客队: {spider_away}")
+    logger.info(f"  - 匹配阈值: 0.8")
+
     match_result = fuzzy_match_teams(
         spider_home=spider_home,
         spider_away=spider_away,
@@ -174,21 +187,64 @@ async def GetOdd(
             >>> result['success']
             True
     """
-    # 1. 提取参数
-    spider_home = dispatch_message.get('spider_home')
-    spider_away = dispatch_message.get('spider_away')
-    spider_sport_type = dispatch_message.get('spider_sport_type')
-    spider_market_id = dispatch_message.get('spider_market_id')
-    spider_handicap_value = dispatch_message.get('spider_handicap_value')
+    # 🔍 调试日志：检查 self.page 状态
+    print(f"🔍 [DEBUG] GetOdd 开始执行")
+    print(f"  - self.page: {self.page}")
+    print(f'dispatch_message : {dispatch_message}')
+    # 检查 page 是否有效
+    if not self.page:
+        print("❌ self.page 为 None，无法执行 GetOdd")
+        return {
+            'success': False,
+            'message': 'page 对象为 None，请先执行 prepare_work()'
+        }
+
+    try:
+        print(f"  - page.url: {self.page.url}")
+        print(f"  - page.is_closed: {self.page.is_closed()}")
+    except Exception as e:
+        logger.error(f"❌ 无法访问 page 对象: {e}")
+        return {
+            'success': False,
+            'message': f'page 对象无效: {e}'
+        }
+
+    logger.info(f"  - dispatch_message: {dispatch_message}")
+
+    # 1. 提取参数 (从 bet_data 中获取)
+    bet_data = dispatch_message.get('bet_data', {})
+    spider_home = bet_data.get('spider_home')
+    spider_away = bet_data.get('spider_away')
+    spider_sport_type = bet_data.get('spider_sport_type')
+    spider_market_id = str(bet_data.get('spider_market_id'))  # 转换为字符串
+    spider_handicap_value = bet_data.get('spider_handicap_value')
+
+    print(f"\n{'='*60}")
+    print(f"📋 GetOdd 参数:")
+    print(f"  - 主队: {spider_home}")
+    print(f"  - 客队: {spider_away}")
+    print(f"  - 运动类型: {spider_sport_type}")
+    print(f"  - Market ID: {spider_market_id}")
+    print(f"  - Handicap Value: {spider_handicap_value}")
+    print(f"{'='*60}\n")
 
     # 2. 将爬虫运动类型转换为 betinasian 运动类型  如: basketball -> basket,soccer -> fb
+    original_sport_type = spider_sport_type
     spider_sport_type = await sport_type_to_betinasian_sport_type(
         self,
         spider_sport_type=spider_sport_type,
         **kwargs
     )
 
+    if original_sport_type != spider_sport_type:
+        logger.info(f"🔄 运动类型转换: {original_sport_type} -> {spider_sport_type}")
+
     # 2. 获取 event_key (通过队名匹配) 如:2026-01-04,31629,36428
+    print(f"\n🔍 开始匹配比赛...")
+    print(f"  - 查询运动类型: {spider_sport_type}")
+    print(f"  - 查询主队: {spider_home}")
+    print(f"  - 查询客队: {spider_away}")
+
     match_result = await get_event_key_by_team_name(
         self,
         spider_home=spider_home,
@@ -198,23 +254,39 @@ async def GetOdd(
     )
 
     if not match_result.get('success'):
+        print(f"\n❌ 比赛匹配失败:")
+        print(f"  - 原因: {match_result.get('message')}")
+        print(f"  - 查询的主队: {spider_home}")
+        print(f"  - 查询的客队: {spider_away}")
+        print(f"  - 运动类型: {spider_sport_type}")
         return match_result
 
     event = match_result.get('event')
     event_key = match_result.get('event_key')
-    logger.info(f"✅ 队名匹配成功: event_key={event_key}")
+
+    print(f"\n✅ 比赛匹配成功!")
+    print(f"  - Event Key: {event_key}")
+    print(f"  - 匹配类型: {match_result.get('match_type')}")
+    print(f"  - 匹配分数: {match_result.get('score'):.2f}")
+    print(f"  - BetInAsian 主队: {event.get('home')}")
+    print(f"  - BetInAsian 客队: {event.get('away')}")
+    print(f"  - 联赛: {event.get('competition_name')}")
+    print(f"  - 是否进行中: {event.get('isInRunning')}")
 
     # 3. event_id = event_key (BetInAsian 使用相同格式) 如:2026-01-04,31629,36428
     event_id = event_key
 
     # 4. 验证必需参数
     if not spider_market_id:
+        logger.error(f"❌ 缺少必需参数: spider_market_id")
         return {
             'success': False,
             'message': '缺少必需参数: spider_market_id'
         }
 
-    logger.info(f"Spider Market: ID={spider_market_id}, Handicap={spider_handicap_value}")
+    print(f"\n📊 盘口参数:")
+    print(f"  - Spider Market ID: {spider_market_id}")
+    print(f"  - Handicap Value: {spider_handicap_value}")
 
     # 5. 构造 bet_type (使用统一映射接口) 
     """
@@ -229,15 +301,27 @@ async def GetOdd(
     )
 
     if not bet_type:
+        print(f"\n❌ 无法映射 market ID:")
+        print(f"  - Spider Market ID: {spider_market_id}")
+        print(f"  - Sport Type: {spider_sport_type}")
+        print(f"  - Handicap Value: {spider_handicap_value}")
         return {
             'success': False,
             'message': f'无法映射 market ID: {spider_market_id} (sport: {spider_sport_type})'
         }
 
-    logger.info(f"✅ 构造 bet_type: {bet_type}")
+    print(f"\n✅ Bet Type 构造成功:")
+    print(f"  - Bet Type: {bet_type}")
 
     # 6. 调用 create_betslip, 申请一个 betslip ,并且会触发 ws 中接收 pmm 的数据.
-    logger.info(f"📋 创建 Betslip: sport={spider_sport_type}, event_id={event_id}, bet_type={bet_type}")
+    print(f"\n{'='*60}")
+    print(f"📋 创建 Betslip")
+    print(f"{'='*60}")
+    print(f"  - Sport: {spider_sport_type}")
+    print(f"  - Event ID: {event_id}")
+    print(f"  - Bet Type: {bet_type}")
+    print(f"  - Event: {event.get('home')} vs {event.get('away')}")
+    print(f"{'='*60}\n")
 
     betslip_result = await create_betslip(
         page=self.page,
@@ -248,7 +332,10 @@ async def GetOdd(
 
     # 7. 处理 betslip 创建结果
     if not betslip_result.get('success'):
-        logger.error(f"❌ Betslip 创建失败: {betslip_result.get('error')}")
+        logger.error(f"\n❌ Betslip 创建失败:")
+        logger.error(f"  - 错误: {betslip_result.get('error')}")
+        logger.error(f"  - 状态码: {betslip_result.get('status')}")
+        logger.error(f"  - 完整响应: {betslip_result}")
         return {
             'success': False,
             'message': f"Betslip 创建失败: {betslip_result.get('error')}",
@@ -263,7 +350,8 @@ async def GetOdd(
             }
         }
 
-    logger.info(f"✅ Betslip 创建成功!")
+    logger.info(f"\n✅ Betslip 创建成功!")
+    logger.info(f"  - 状态码: {betslip_result.get('status')}")
 
     # 提取 betslip_id (尝试两种可能的路径)
     betslip_data = betslip_result.get('data', {})
@@ -274,18 +362,26 @@ async def GetOdd(
         betslip_id = betslip_data.get('data', {}).get('betslip_id')
 
     if not betslip_id:
-        logger.error(f"❌ 无法从响应中提取 betslip_id")
-        logger.error(f"响应结构: {betslip_result}")
+        print(f"\n❌ 无法从响应中提取 betslip_id")
+        print(f"  - betslip_result keys: {list(betslip_result.keys())}")
+        print(f"  - betslip_data keys: {list(betslip_data.keys())}")
+        print(f"  - 完整响应: {betslip_result}")
         return {
             'success': False,
             'message': 'Betslip 创建成功但无法提取 betslip_id',
             'betslip_result': betslip_result
         }
 
-    logger.info(f"📋 Betslip ID: {betslip_id}")
+    print(f"\n✅ Betslip ID 提取成功:")
+    print(f"  - Betslip ID: {betslip_id}")
 
     # 8. 等待 PMM 数据到达并获取最佳赔率
-    logger.info(f"⏳ 等待 PMM 数据准备...")
+    print(f"\n{'='*60}")
+    print(f"⏳ 等待 PMM 数据准备...")
+    print(f"{'='*60}")
+    print(f"  - Betslip ID: {betslip_id}")
+    print(f"  - Required Amount: {required_amount} {required_currency}")
+    print(f"{'='*60}\n")
 
     # 使用智能等待机制：等待 PMM 数据稳定且满足执行条件
     wait_result = await wait_for_pmm_ready(
@@ -301,19 +397,26 @@ async def GetOdd(
 
     # 检查等待结果
     if not wait_result.get('ready'):
-        logger.warning(f"⚠️ PMM 数据未准备好: {wait_result.get('reason')}, "
-                      f"耗时={wait_result.get('elapsed')}ms, "
-                      f"更新次数={wait_result.get('update_count')}")
+        print(f"\n⚠️ PMM 数据未准备好:")
+        print(f"  - 原因: {wait_result.get('reason')}")
+        print(f"  - 耗时: {wait_result.get('elapsed')}ms")
+        print(f"  - 更新次数: {wait_result.get('update_count')}")
+        print(f"  - 最佳价格: {wait_result.get('best_price')}")
+        print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
     else:
-        logger.info(f"✅ PMM 数据已准备 (耗时={wait_result.get('elapsed')}ms, "
-                   f"更新={wait_result.get('update_count')}次, "
-                   f"稳定={wait_result.get('stable_duration')}ms, "
-                   f"最佳价格={wait_result.get('best_price')}, "
-                   f"庄家={wait_result.get('best_bookie')}, "
-                   f"可用金额={wait_result.get('best_amount')})")
+        print(f"\n✅ PMM 数据已准备:")
+        print(f"  - 耗时: {wait_result.get('elapsed')}ms")
+        print(f"  - 更新次数: {wait_result.get('update_count')}")
+        print(f"  - 稳定时长: {wait_result.get('stable_duration')}ms")
+        print(f"  - 最佳价格: {wait_result.get('best_price')}")
+        print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
+        print(f"  - 可用金额: {wait_result.get('best_amount')}")
 
     # 获取最佳赔率
-    logger.info(f"🔍 获取最佳赔率...")
+    logger.info(f"\n🔍 获取最佳赔率...")
+    logger.info(f"  - Betslip ID: {betslip_id}")
+    logger.info(f"  - Required Amount: {required_amount} {required_currency}")
+
     best_price_result = await get_price_by_betslip_id(
         page=self.page,
         betslip_id=betslip_id,
@@ -321,7 +424,30 @@ async def GetOdd(
         required_currency=required_currency
     )
 
+    # 显示最佳赔率结果
+    if best_price_result.get('success'):
+        logger.info(f"\n✅ 找到可执行赔率:")
+        logger.info(f"  - Bookie: {best_price_result.get('bookie')}")
+        logger.info(f"  - Price: {best_price_result.get('price')}")
+        logger.info(f"  - Available: {best_price_result.get('available')}")
+        logger.info(f"  - Updated At: {best_price_result.get('updated_at')}")
+    else:
+        logger.warning(f"\n⚠️ 未找到可执行赔率:")
+        logger.warning(f"  - 原因: {best_price_result.get('reason')}")
+        if best_price_result.get('best_odds'):
+            logger.warning(f"  - 最高赔率(不可执行): {best_price_result.get('best_odds')}")
+
     # 9. 返回完整结果
+    logger.info(f"\n{'='*60}")
+    logger.info(f"📊 GetOdd 完成")
+    logger.info(f"{'='*60}")
+    logger.info(f"  - Success: True")
+    logger.info(f"  - Event: {event.get('home')} vs {event.get('away')}")
+    logger.info(f"  - Event Key: {event_key}")
+    logger.info(f"  - Betslip ID: {betslip_id}")
+    logger.info(f"  - Best Price: {best_price_result.get('price') if best_price_result.get('success') else 'N/A'}")
+    logger.info(f"{'='*60}\n")
+
     return {
         'success': True,
         'event_id': event_id,

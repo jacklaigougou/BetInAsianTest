@@ -45,11 +45,11 @@ class OnlinePlatform:
             self._platform_info: Dict[str, dict] = platform_info or {}
             # 存储 WebSocket 客户端
             self._ws_client = ws_client
-            # 初始化 FingerBrowser 实例 (Linken Sphere)
-            self._finger_browser = FingerBrowser(browser_type="linken_sphere")
+            # 初始化 FingerBrowser 实例 (ADS)
+            self._finger_browser = FingerBrowser(browser_type="ads")
             OnlinePlatform._initialized = True
             print("✅ OnlinePlatform 单例已初始化")
-            print("✅ FingerBrowser (Linken Sphere) 已初始化")
+            print("✅ FingerBrowser (ADS) 已初始化")
 
     async def update_accounts(self, message: dict) -> int:
         """
@@ -86,15 +86,13 @@ class OnlinePlatform:
             # 调试日志: 打印实际的 status 值
             # print(f"🔍 [调试] handler_name={handler_name}, status='{status}', type={type(status)}")
 
-            # 1. 只记录 status="scheduling"
-            if status != 'scheduling':
-                # 如果之前存在且是 scheduling,现在不是了 → 删除
+            # 1. 只记录 status="scheduling" 或 "working"
+            active_statuses = {'scheduling', 'working'}
+            if status not in active_statuses:
+                # 如果之前存在且是活跃状态,现在不是了 → 删除
                 if handler_name and handler_name in self._accounts:
-                    print(f"⚠️ [DEBUG] 准备删除账号: {handler_name} (原因: status='{status}' != 'scheduling')")
+                    print(f"⚠️ [DEBUG] 准备删除账号: {handler_name} (原因: status='{status}' 不在活跃状态)")
                     self.remove_account(handler_name)
-                else:
-                    # print(f"ℹ️ [调试] status != 'scheduling', 但账号不在列表中,跳过")
-                    pass
                 continue
 
             platform_name = account.get('platform_name')
@@ -372,9 +370,19 @@ class OnlinePlatform:
             if hasattr(ac, 'prepare_work'):
                 try:
                     print(f"🛠 [{handler_name}] 开始执行 prepare_work")
-                    result = await ac.prepare_work()
+                    # ✅ 订阅篮球和足球的所有 in-running 比赛
+                    result = await ac.prepare_work(
+                        subscribe_sports=['basket', 'fb']
+                    )
                     if not result:
                         print(f"⚠️ [{handler_name}] prepare_work 未返回数据")
+                    elif result.get('success'):
+                        # ✅ 关键修复：更新 page 对象
+                        new_page = result.get('page')
+                        if new_page:
+                            account['page'] = new_page
+                            ac.page = new_page
+                            print(f"✅ [{handler_name}] page 对象已更新")
                 except Exception as exc:
                     print(f"⚠️ [{handler_name}] prepare_work 异常: {exc}")
         except Exception as exc:
