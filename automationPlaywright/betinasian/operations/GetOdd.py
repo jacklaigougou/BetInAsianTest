@@ -6,7 +6,7 @@ from typing import Dict, Any
 import logging
 import asyncio
 from utils.matchGameName import fuzzy_match_teams
-from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets
+from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets, get_event_score
 from ..MappingBetburgerToBetinisian import build_bet_type_from_spider
 from ..jsCodeExcutors.http_executors import create_betslip
 from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id, wait_for_pmm_ready
@@ -276,6 +276,22 @@ async def GetOdd(
     # 3. event_id = event_key (BetInAsian 使用相同格式) 如:2026-01-04,31629,36428
     event_id = event_key
 
+    # 3.1 获取比赛实时比分
+    home_score = 0  # 默认值
+    away_score = 0  # 默认值
+
+    try:
+        score_data = await get_event_score(self.page, event_key)
+        if score_data.get('has_score'):
+            home_score = score_data.get('home_score', 0)
+            away_score = score_data.get('away_score', 0)
+            print(f"\n⚽ 实时比分: {home_score} - {away_score}")
+        else:
+            print(f"\n⚠️  暂无比分数据 (比赛可能未开始)")
+    except Exception as e:
+        logger.warning(f"获取比分失败: {e}")
+        print(f"\n⚠️  获取比分失败: {e}")
+
     # 4. 验证必需参数
     if not spider_market_id:
         logger.error(f"❌ 缺少必需参数: spider_market_id")
@@ -288,16 +304,21 @@ async def GetOdd(
     print(f"  - Spider Market ID: {spider_market_id}")
     print(f"  - Handicap Value: {spider_handicap_value}")
 
-    # 5. 构造 bet_type (使用统一映射接口) 
+    # 5. 构造 bet_type (使用统一映射接口)
     """
         ("basket", "17", -5.5)	{"betinasian_market": "ah", "betinasian_side": "h", "line_id": -22}	"for,ah,h,-22"
         输入17 ,其实已经包含了 两个信息: market_type 和 side
         所以不需要再进行映射
+
+        足球 IR 格式盘口会使用实时比分:
+        ("fb", "17", -0.5, home_score=1, away_score=2) -> "for,ir,1,2,ah,h,-2"
     """
     bet_type = build_bet_type_from_spider(
         sport_type=spider_sport_type,
         spider_market_id=spider_market_id,
-        handicap_value=spider_handicap_value
+        handicap_value=spider_handicap_value,
+        home_score=home_score if spider_sport_type in ['fb', 'soccer'] else 0,
+        away_score=away_score if spider_sport_type in ['fb', 'soccer'] else 0
     )
 
     if not bet_type:

@@ -27,7 +27,7 @@ Bet Type Formats:
 from typing import Dict, Any, Optional
 
 
-def build(mapping: Dict[str, Any]) -> Optional[str]:
+def build(mapping: Dict[str, Any], home_score: int = 0, away_score: int = 0) -> Optional[str]:
     """
     Build BetInAsian bet_type string from mapping dictionary
 
@@ -41,6 +41,8 @@ def build(mapping: Dict[str, Any]) -> Optional[str]:
                 "use_ir_format": True,         # IR format flag (optional)
                 "description": "..."           # Description (ignored)
             }
+        home_score: Home team score for IR format (default: 0)
+        away_score: Away team score for IR format (default: 0)
 
     Returns:
         bet_type string or None if mapping is invalid
@@ -137,12 +139,12 @@ def build(mapping: Dict[str, Any]) -> Optional[str]:
         if market in ['ahover', 'ahunder']:
             if line_id is None:
                 return None
-            return f"for,ir,0,0,{market},{line_id}"
+            return f"for,ir,{home_score},{away_score},{market},{line_id}"
         else:
             # Asian Handicap 等（有 side）
             if not side or line_id is None:
                 return None
-            return f"for,ir,0,0,{market},{side},{line_id}"
+            return f"for,ir,{home_score},{away_score},{market},{side},{line_id}"
 
     # 4. Standard format (Basketball, etc.)
     market = mapping.get('betinasian_market')

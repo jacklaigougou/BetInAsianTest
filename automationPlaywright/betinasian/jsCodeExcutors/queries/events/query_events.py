@@ -98,6 +98,95 @@ async def query_betinasian_events(
         return []
 
 
+async def get_event_score(
+    page: Any,
+    event_key: str
+) -> Dict[str, Any]:
+    """
+    通过 event_key 获取比赛的实时比分
+
+    Args:
+        page: Playwright Page 对象
+        event_key: 比赛唯一标识 (如: '2026-01-04,31629,36428')
+
+    Returns:
+        Dict: 比分信息
+        {
+            'event_key': '2026-01-04,31629,36428',
+            'home_score': 98,
+            'away_score': 102,
+            'home_team': 'Lakers',
+            'away_team': 'Warriors',
+            'has_score': True,
+            'is_in_running': True,
+            'raw_score': [98, 102]
+        }
+        如果没有比分数据，返回 {'has_score': False}
+
+    Examples:
+        >>> score = await get_event_score(page, '2026-01-04,31629,36428')
+        >>> score['has_score']
+        True
+        >>> print(f"{score['home_team']} {score['home_score']} - {score['away_score']} {score['away_team']}")
+        Lakers 98 - 102 Warriors
+    """
+    try:
+        logger.info(f"获取比赛比分: {event_key}")
+
+        # 执行 JavaScript 获取比分
+        js_code = f'''
+            (() => {{
+                const event = window.__eventsStore.get("{event_key}");
+
+                if (!event) {{
+                    return {{ error: 'Event not found', has_score: false }};
+                }}
+
+                // 检查是否有 ir_status 和 score
+                if (!event.ir_status || !event.ir_status.score || !Array.isArray(event.ir_status.score)) {{
+                    return {{
+                        event_key: event.event_key,
+                        has_score: false,
+                        is_in_running: event.isInRunning || false,
+                        home_team: event.home,
+                        away_team: event.away
+                    }};
+                }}
+
+                const [homeScore, awayScore] = event.ir_status.score;
+
+                return {{
+                    event_key: event.event_key,
+                    home_score: homeScore,
+                    away_score: awayScore,
+                    home_team: event.home,
+                    away_team: event.away,
+                    has_score: true,
+                    is_in_running: event.isInRunning || false,
+                    raw_score: event.ir_status.score,
+                    ir_status: event.ir_status
+                }};
+            }})()
+        '''
+
+        result = await page.evaluate(js_code)
+
+        if result.get('error'):
+            logger.warning(f"未找到比赛: {event_key}")
+            return {'has_score': False, 'error': result.get('error')}
+
+        if not result.get('has_score'):
+            logger.warning(f"比赛 {event_key} 没有比分数据 (可能未开始或已结束)")
+            return result
+
+        logger.info(f"✅ 比分: {result['home_team']} {result['home_score']} - {result['away_score']} {result['away_team']}")
+        return result
+
+    except Exception as e:
+        logger.error(f"获取比分失败: {e}", exc_info=True)
+        return {'has_score': False, 'error': str(e)}
+
+
 async def query_active_markets(
     page: Any,
     event_key: str

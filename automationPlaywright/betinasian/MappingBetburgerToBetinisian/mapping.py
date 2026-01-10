@@ -387,7 +387,9 @@ def validate_mapping(
 def build_bet_type_from_spider(
     sport_type: str,
     spider_market_id: str,
-    handicap_value: Optional[float] = None
+    handicap_value: Optional[float] = None,
+    home_score: int = 0,
+    away_score: int = 0
 ) -> Optional[str]:
     """
     Build BetInAsian bet_type string directly from spider market parameters
@@ -399,6 +401,8 @@ def build_bet_type_from_spider(
         sport_type: Sport type ("basket", "soccer", "fb", etc.)
         spider_market_id: Spider market ID (e.g., "17", "1")
         handicap_value: Handicap value (e.g., -5.5, 170), optional
+        home_score: Home team score for IR format (default: 0)
+        away_score: Away team score for IR format (default: 0)
 
     Returns:
         BetInAsian bet_type string (e.g., "for,ah,h,-22" or "for,ml,h")
@@ -417,9 +421,9 @@ def build_bet_type_from_spider(
         >>> build_bet_type_from_spider("basket", "19", 170)
         "for,ahou,o,680"
 
-        >>> # Soccer Asian Handicap
-        >>> build_bet_type_from_spider("soccer", "17", -0.5)
-        "for,ah,h,-2"
+        >>> # Soccer Asian Handicap with score
+        >>> build_bet_type_from_spider("soccer", "17", -0.5, home_score=1, away_score=2)
+        "for,ir,1,2,ah,h,-2"
 
         >>> # Invalid sport
         >>> build_bet_type_from_spider("tennis", "17", -5.5)
@@ -434,6 +438,6 @@ def build_bet_type_from_spider(
     # Step 2: Build bet_type string from mapping
     from .bet_type_builder import build
 
-    bet_type = build(mapping)
+    bet_type = build(mapping, home_score, away_score)
 
     return bet_type
