@@ -110,6 +110,9 @@ async def GetOdd(
         logger.error(f"[{handler_name}] msg 缺少必要参数 order_id")
         return {'success': False, 'message': 'msg 缺少必要参数 order_id'}
 
+
+
+    
     # 提取 event_id
     bookmaker_event_direct_link = bet_data.get('bookmaker_event_direct_link', '')
     if not event_id:

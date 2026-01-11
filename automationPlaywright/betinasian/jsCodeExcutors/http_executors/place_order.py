@@ -130,13 +130,18 @@ async function(orderData) {{
             }
         else:
             error_msg = result.get('error', 'Unknown error')
+            status = result.get('status', 0)
+            response_data = result.get('data')
+
             logger.error(f"❌ Failed to place order: {error_msg}")
+            logger.error(f"   Status: {status}")
+            logger.error(f"   Response data: {json.dumps(response_data, indent=2) if response_data else 'None'}")
 
             return {
                 'success': False,
                 'error': error_msg,
-                'status': result.get('status', 0),
-                'data': result.get('data'),
+                'status': status,
+                'data': response_data,
                 'timestamp': result.get('timestamp')
             }
 

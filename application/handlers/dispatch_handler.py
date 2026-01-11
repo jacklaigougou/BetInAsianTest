@@ -12,9 +12,10 @@ async def handle_dispatch_message(app, message: Dict[str, Any]) -> None:
 
     match msg_type:
         case 'betting_order' | 'betting':
+            print(f'收到 dispatch --> betting_order: {message}')
             app.task_builder.build_betting_order_task(message)
         case 'new_order':
-            print('收到 dispatch --> new_order: ',message)
+            # print('收到 dispatch --> new_order: ',message)
             app.task_builder.build_new_order_task(message)
         case 'stop_pin888_cycle':
             _handle_stop_cycle(app, message)

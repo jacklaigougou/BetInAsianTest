@@ -479,6 +479,7 @@ async def BettingOrder(
         >>> result['success']
         True
     """
+    
     bet_start_time = time.time()
     handler_name = self.handler_name
 

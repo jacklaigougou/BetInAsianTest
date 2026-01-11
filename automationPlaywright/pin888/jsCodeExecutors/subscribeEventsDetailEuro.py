@@ -69,19 +69,12 @@ async def subscribe_events_detail_euro(page, event_id):
             print(f"❌ [PIN888] 加载 Subscribe_events_detail_euro.js 失败")
             return False
 
-        # 5. 替换占位符（确保 event_id 被正确引用）
-        # 如果 event_id 是字符串，需要加引号
-        if isinstance(event_id, str):
-            js_code = js_code.replace('__EVENT_ID__', f'"{event_id}"')
-        else:
-            js_code = js_code.replace('__EVENT_ID__', str(event_id))
+        # 5. 替换占位符
 
-        # 6. 包装并执行（使用 async function 包装以支持 return）
-        wrapped_code = f"""
-(function() {{
-{js_code}
-}})()
-"""
+        js_code = js_code.replace('__EVENT_ID__', str(event_id))
+
+        # 6. 包装并执行
+        wrapped_code = f"(() => {{ {js_code} }})()"
 
         result = await page.evaluate(wrapped_code)
         
