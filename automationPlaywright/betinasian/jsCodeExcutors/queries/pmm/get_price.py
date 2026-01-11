@@ -353,7 +353,6 @@ async def get_price_by_betslip_id(
 
                     // Check if any tier meets required_amount
                     const executableTier = data.price_tiers.find(tier =>
-                        tier.max >= params.required_amount &&
                         tier.min <= params.required_amount
                     );
 
@@ -361,7 +360,7 @@ async def get_price_by_betslip_id(
                         validBookies.push({
                             bookie: bookie,
                             price: executableTier.price,
-                            available: data.available,
+                            available: data.top_available,  // 修复：使用 top_available 而不是 available
                             status: data.status,
                             updated_at: data.last_update,
                             tier: executableTier

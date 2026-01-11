@@ -95,30 +95,79 @@ async def BettingOrder(
         logger.info("🎯 开始下注流程")
         logger.info("="*60)
 
-        # ========== Step 1: 调用 GetOdd 获取 betslip 和价格信息 ==========
+        # ========== Step 1: 获取 Betslip 和价格信息 ==========
         logger.info("\n📋 Step 1: 获取 Betslip 和价格信息...")
 
-        odd_result = await self.GetOdd(
-            dispatch_message=dispatch_message,
-            required_amount=required_amount,
-            required_currency=required_currency
-        )
+        # 1.1 从 dispatch_message 提取 order_id
+        bet_data = dispatch_message.get('bet_data', {})
+        order_id = bet_data.get('order_id', '')
 
-        if not odd_result.get('success'):
-            logger.error(f"❌ GetOdd 失败: {odd_result.get('message')}")
-            return {
-                'success': False,
-                'message': f"GetOdd 失败: {odd_result.get('message')}",
-                'odd_result': odd_result
+        # 1.2 尝试从 order_record 获取缓存数据
+        if order_id and order_id in self.order_record:
+            # 从缓存获取
+            cached_data = self.order_record[order_id]
+            logger.info(f"✅ 从 order_record 获取缓存数据")
+            logger.info(f"  - Order ID: {order_id}")
+            logger.info(f"  - Handler: {cached_data.get('handler_name')}")
+            logger.info(f"  - Betslip ID: {cached_data.get('betslip_id')}")
+            logger.info(f"  - Event: {cached_data.get('home')} vs {cached_data.get('away')}")
+
+            # 提取关键信息
+            betslip_id = cached_data.get('betslip_id')
+            event_id = cached_data.get('event_id')
+            bet_type = cached_data.get('bet_type')
+
+            # 构造 best_price_info（与 GetOdd 返回格式一致）
+            best_price_info = {
+                'success': True,
+                'price': cached_data.get('odds'),
+                'bookie': cached_data.get('bookie'),
+                'available': cached_data.get('max_stake')
             }
 
-        # 提取关键信息
-        betslip_id = odd_result.get('betslip_id')
-        event_id = odd_result.get('event_id')
-        bet_type = odd_result.get('bet_type')
-        best_price_info = odd_result.get('best_price')
+        else:
+            # 1.3 降级：重新调用 GetOdd
+            if order_id:
+                logger.warning(f"⚠️ order_record 中没有数据（order_id: {order_id}），重新调用 GetOdd")
+            else:
+                logger.warning(f"⚠️ dispatch_message 中没有 order_id，重新调用 GetOdd")
 
-        logger.info(f"✅ Betslip 创建成功:")
+            odd_result = await self.GetOdd(
+                dispatch_message=dispatch_message,
+                required_amount=required_amount,
+                required_currency=required_currency
+            )
+
+            if not odd_result.get('success'):
+                logger.error(f"❌ GetOdd 失败: {odd_result.get('message')}")
+                return {
+                    'success': False,
+                    'message': f"GetOdd 失败: {odd_result.get('message')}",
+                    'odd_result': odd_result
+                }
+
+            # 从 GetOdd 返回值提取信息（注意：GetOdd 现在返回 Pin888 格式）
+            # 需要从 order_record 重新获取详细信息
+            order_id = odd_result.get('order_id', '')
+            if order_id and order_id in self.order_record:
+                cached_data = self.order_record[order_id]
+                betslip_id = cached_data.get('betslip_id')
+                event_id = cached_data.get('event_id')
+                bet_type = cached_data.get('bet_type')
+                best_price_info = {
+                    'success': True,
+                    'price': cached_data.get('odds'),
+                    'bookie': cached_data.get('bookie'),
+                    'available': cached_data.get('max_stake')
+                }
+            else:
+                logger.error(f"❌ GetOdd 成功但无法从 order_record 获取数据")
+                return {
+                    'success': False,
+                    'message': 'GetOdd 成功但无法从 order_record 获取数据'
+                }
+
+        logger.info(f"✅ 数据获取成功:")
         logger.info(f"  - Betslip ID: {betslip_id}")
         logger.info(f"  - Event ID: {event_id}")
         logger.info(f"  - Bet Type: {bet_type}")
@@ -129,16 +178,16 @@ async def BettingOrder(
         best_price = None
         best_bookie = None
 
-        # 优先使用 GetOdd 返回的价格信息
+        # 优先使用缓存的价格信息
         if best_price_info and best_price_info.get('success'):
             best_price = best_price_info.get('price')
             best_bookie = best_price_info.get('bookie')
-            logger.info(f"✅ 从 GetOdd 获取价格:")
+            logger.info(f"✅ 使用缓存价格:")
             logger.info(f"  - Price: {best_price}")
             logger.info(f"  - Bookie: {best_bookie}")
         else:
             # 降级方案：直接从 Store 获取最高价格
-            logger.warning(f"⚠️ GetOdd 未返回价格信息，使用降级方案...")
+            logger.warning(f"⚠️ 缓存未返回价格信息，使用降级方案...")
 
             highest_price_data = await self.page.evaluate(f"""
                 () => {{

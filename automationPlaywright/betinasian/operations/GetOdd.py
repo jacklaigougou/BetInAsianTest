@@ -5,6 +5,7 @@ BetInAsian 获取赔率
 from typing import Dict, Any
 import logging
 import asyncio
+import time
 from utils.matchGameName import fuzzy_match_teams
 from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets, get_event_score
 from ..MappingBetburgerToBetinisian import build_bet_type_from_spider
@@ -212,6 +213,10 @@ async def GetOdd(
     logger.info(f"  - dispatch_message: {dispatch_message}")
 
     # 1. 提取参数 (从 bet_data 中获取)
+    original_msg = dispatch_message  # 保存原始消息
+    order_id = dispatch_message.get('order_id', '')  # 获取 order_id
+    handler_name = self.handler_name  # 获取 handler_name
+
     bet_data = dispatch_message.get('bet_data', {})
     spider_home = bet_data.get('spider_home')
     spider_away = bet_data.get('spider_away')
@@ -291,6 +296,24 @@ async def GetOdd(
     except Exception as e:
         logger.warning(f"获取比分失败: {e}")
         print(f"\n⚠️  获取比分失败: {e}")
+
+    # 3.2 提取时间信息（如果有）
+    match_phase = "UNKNOWN"
+    remaining_seconds = 0
+
+    try:
+        if event.get('ir_status') and event.get('ir_status').get('time'):
+            # 从 ir_status.time 提取时间信息
+            time_info = event.get('ir_status').get('time')
+            # 如果有时间信息，标记为进行中
+            match_phase = "IN_PLAY" if event.get('isInRunning') else "NOT_STARTED"
+            # TODO: 根据实际 time 格式解析 remaining_seconds
+            # 暂时使用默认值 0
+        else:
+            match_phase = "IN_PLAY" if event.get('isInRunning') else "NOT_STARTED"
+    except Exception as e:
+        logger.warning(f"提取时间信息失败: {e}")
+        match_phase = "UNKNOWN"
 
     # 4. 验证必需参数
     if not spider_market_id:
@@ -458,28 +481,84 @@ async def GetOdd(
         if best_price_result.get('best_odds'):
             logger.warning(f"  - 最高赔率(不可执行): {best_price_result.get('best_odds')}")
 
-    # 9. 返回完整结果
+    # 9. 存储订单记录
+    self.order_record[order_id] = {
+        # Handler 信息
+        'handler_name': handler_name,
+        'order_id': order_id,
+
+        # 基本信息
+        'event_key': event_key,
+        'event_id': event_id,
+        'betslip_id': betslip_id,
+        'bet_type': bet_type,
+
+        # 赔率信息
+        'odds': best_price_result.get('price'),
+        'max_stake': best_price_result.get('available'),
+        'bookie': best_price_result.get('bookie'),
+
+        # 队伍信息
+        'home': event.get('home'),
+        'away': event.get('away'),
+        'competition_name': event.get('competition_name'),
+
+        # 比赛信息
+        'sport_type': spider_sport_type,
+        'match_phase': match_phase,
+        'remaining_seconds': remaining_seconds,
+        'is_in_running': event.get('isInRunning'),
+
+        # Spider 参数
+        'spider_home': spider_home,
+        'spider_away': spider_away,
+        'spider_market_id': spider_market_id,
+        'spider_handicap_value': spider_handicap_value,
+        'spider_handicap': bet_data.get('spider_handicap'),
+        'spider_period': bet_data.get('spider_period'),
+        'spider_sport_type': spider_sport_type,
+
+        # 匹配信息
+        'match_type': match_result.get('match_type'),
+        'match_score': match_result.get('score'),
+
+        # 比分信息
+        'home_score': home_score,
+        'away_score': away_score,
+
+        # 原始消息和重试
+        'msg': original_msg,
+        'retry_count': 0,
+
+        # 时间戳
+        'created_at': time.time()
+    }
+
+    # 10. 返回完整结果（按照 Pin888 格式）
     logger.info(f"\n{'='*60}")
     logger.info(f"📊 GetOdd 完成")
     logger.info(f"{'='*60}")
     logger.info(f"  - Success: True")
+    logger.info(f"  - Handler: {handler_name}")
+    logger.info(f"  - Order ID: {order_id}")
     logger.info(f"  - Event: {event.get('home')} vs {event.get('away')}")
     logger.info(f"  - Event Key: {event_key}")
     logger.info(f"  - Betslip ID: {betslip_id}")
-    logger.info(f"  - Best Price: {best_price_result.get('price') if best_price_result.get('success') else 'N/A'}")
+    logger.info(f"  - Platform Odd: {best_price_result.get('price') if best_price_result.get('success') else 'N/A'}")
+    logger.info(f"  - Platform Max Stake: {best_price_result.get('available') if best_price_result.get('success') else 'N/A'}")
+    logger.info(f"  - Match Phase: {match_phase}")
+    logger.info(f"  - Remaining Seconds: {remaining_seconds}")
     logger.info(f"{'='*60}\n")
 
     return {
         'success': True,
-        'event_id': event_id,
-        'event_key': event_key,
-        'bet_type': bet_type,
-        'betslip_id': betslip_id,
-        'betslip_result': betslip_result,
-        'best_price': best_price_result,  # 新增: 最佳赔率信息
-        'match_info': {
-            'match_type': match_result.get('match_type'),
-            'score': match_result.get('score'),
-            'event': event
-        }
+        'handler_name': handler_name,
+        'order_id': order_id,
+        'platform_odd': best_price_result.get('price') if best_price_result.get('success') else None,
+        'platform_max_stake': best_price_result.get('available') if best_price_result.get('success') else None,
+        'match_phase': match_phase,
+        'remaining_seconds': remaining_seconds,
+        'spider_handicap': bet_data.get('spider_handicap'),
+        'spider_period': bet_data.get('spider_period'),
+        'sport_type': spider_sport_type
     }
