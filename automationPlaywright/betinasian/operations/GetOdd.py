@@ -495,7 +495,7 @@ async def GetOdd(
 
         # 赔率信息
         'odds': best_price_result.get('price'),
-        'max_stake': best_price_result.get('available'),
+        'max_stake': best_price_result.get('available', {}).get('amount') if best_price_result.get('available') else None,
         'bookie': best_price_result.get('bookie'),
 
         # 队伍信息
@@ -545,7 +545,8 @@ async def GetOdd(
     logger.info(f"  - Event Key: {event_key}")
     logger.info(f"  - Betslip ID: {betslip_id}")
     logger.info(f"  - Platform Odd: {best_price_result.get('price') if best_price_result.get('success') else 'N/A'}")
-    logger.info(f"  - Platform Max Stake: {best_price_result.get('available') if best_price_result.get('success') else 'N/A'}")
+    platform_max_stake = best_price_result.get('available', {}).get('amount') if best_price_result.get('success') and best_price_result.get('available') else 'N/A'
+    logger.info(f"  - Platform Max Stake: {platform_max_stake}")
     logger.info(f"  - Match Phase: {match_phase}")
     logger.info(f"  - Remaining Seconds: {remaining_seconds}")
     logger.info(f"{'='*60}\n")
@@ -555,7 +556,7 @@ async def GetOdd(
         'handler_name': handler_name,
         'order_id': order_id,
         'platform_odd': best_price_result.get('price') if best_price_result.get('success') else None,
-        'platform_max_stake': best_price_result.get('available') if best_price_result.get('success') else None,
+        'platform_max_stake': best_price_result.get('available', {}).get('amount') if best_price_result.get('success') and best_price_result.get('available') else None,
         'match_phase': match_phase,
         'remaining_seconds': remaining_seconds,
         'spider_handicap': bet_data.get('spider_handicap'),

@@ -93,8 +93,12 @@ async def subscribe_live_euro_odds(page, sport_id, period_num):
         js_code = js_code.replace('__SPORT_ID__', sport_id_str)
         js_code = js_code.replace('__PERIOD_NUM__', period_num_str)
 
-        # 6. 包装并执行
-        wrapped_code = f"(() => {{ {js_code} }})()"
+        # 6. 包装并执行（使用 function 包装以支持 return）
+        wrapped_code = f"""
+(function() {{
+{js_code}
+}})()
+"""
 
         result = await page.evaluate(wrapped_code)
 
