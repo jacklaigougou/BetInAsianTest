@@ -21,68 +21,91 @@ async def BettingOrder(
     self,
     dispatch_message: Dict[str, Any],
     stake: float = 5,
-    currency: str = "GBP",
-    duration: int = 30,
+    currency: str = "USD",
+    duration: int = 10,
     required_amount: float = 10.0,
-    required_currency: str = "GBP",
+    required_currency: str = "USD",
     wait_for_order: bool = True,
     **kwargs
 ) -> Dict[str, Any]:
     """
-        下注订单（简化流程）
+    下注订单（简化流程）
 
-        注意：调用此函数前必须先调用 GetOdd 创建 betslip 并存储到 order_record
+    注意：调用此函数前必须先调用 GetOdd 创建 betslip 并存储到 order_record
 
-        Args:
-            dispatch_message: {
-                'bet_data': {
-                    'order_id': str  # 必需，用于从 order_record 获取 betslip_id
-                }
-            }
-            stake: 投注金额 (默认: 2.0)
-            currency: 货币 (默认: "GBP")
-            duration: 订单有效期（秒，默认: 30）
-            required_amount: PMM 查询所需金额 (默认: 10.0)
-            required_currency: PMM 查询所需货币 (默认: "GBP")
-            wait_for_order: 是否等待订单数据 (默认: True)
-            **kwargs: 额外参数
-                - monitor_order: 是否监控订单状态 (默认: True)
+    Args:
+        dispatch_message: {
+            'order_id': str,  # 必需，用于从 order_record 获取 betslip_id
+            'stake': float,   # 可选，投注金额（默认: 5）
+            'currency': str,  # 可选，货币（默认: "USD"）
+            'duration': int   # 可选，订单有效期（秒，默认: 10）
+        }
+        stake: 投注金额 (默认: 5.0)
+        currency: 货币 (默认: "USD")
+        duration: 订单有效期（秒，默认: 10）
+        required_amount: PMM 查询所需金额 (默认: 10.0)
+        required_currency: PMM 查询所需货币 (默认: "USD")
+        wait_for_order: 是否等待订单数据 (默认: True)
+        **kwargs: 额外参数
+            - monitor_order: 是否监控订单状态 (默认: True)
 
-        Returns:
-            {
-                'success': True/False,
-                'order_id': str,
-                'betslip_id': str,
-                'event_id': str,
-                'bet_type': str,
-                'price': float,
-                'bookie': str,
-                'stake': float,
-                'currency': str,
-                'duration': int,
-                'order_status': str,
-                'matched_amount': float,
-                'unmatched_amount': float,
-                'bets': list,
-                'final_order_state': dict,
-                'message': str,
-                'order_result': dict,
-                'order_query_result': dict
-            }
+    注意：
+        - dispatch_message 中的参数优先级高于函数参数
+        - 例如：dispatch_message={'duration': 10} 会覆盖函数参数 duration=30
 
-        Examples:
-            >>> # 先调用 GetOdd
-            >>> odd_result = await self.GetOdd(dispatch_message)
-            >>>
-            >>> # 再调用 BettingOrder
-            >>> result = await BettingOrder(
-            ...     self,
-            ...     dispatch_message,
-            ...     stake=10.0,
-            ...     currency='GBP',
-            ...     duration=30
-            ... )
+    Returns:
+        {
+            'success': True/False,
+            'order_id': str,
+            'betslip_id': str,
+            'event_id': str,
+            'bet_type': str,
+            'price': float,
+            'bookie': str,
+            'stake': float,
+            'currency': str,
+            'duration': int,
+            'order_status': str,
+            'matched_amount': float,
+            'unmatched_amount': float,
+            'bets': list,
+            'final_order_state': dict,
+            'message': str,
+            'order_result': dict,
+            'order_query_result': dict
+        }
+
+    Examples:
+        >>> # 先调用 GetOdd
+        >>> odd_result = await self.GetOdd(dispatch_message)
+        >>>
+        >>> # 使用默认参数下注（duration=30秒）
+        >>> result = await BettingOrder(
+        ...     self,
+        ...     dispatch_message={'order_id': '123'}
+        ... )
+        >>>
+        >>> # 通过 dispatch_message 设置 duration=10秒
+        >>> result = await BettingOrder(
+        ...     self,
+        ...     dispatch_message={
+        ...         'order_id': '123',
+        ...         'stake': 10.0,
+        ...         'currency': 'GBP',
+        ...         'duration': 10  # ← 设置为 10 秒
+        ...     }
+        ... )
+        >>>
+        >>> # 通过函数参数设置 duration=10秒
+        >>> result = await BettingOrder(
+        ...     self,
+        ...     dispatch_message={'order_id': '123'},
+        ...     stake=10.0,
+        ...     currency='GBP',
+        ...     duration=10  # ← 设置为 10 秒
+        ... )
     """
+    betslip_id = None  # 初始化,用于 finally 块清理
     try:
         logger.info("="*60)
         logger.info("🎯 开始下注流程")
@@ -94,6 +117,17 @@ async def BettingOrder(
         # bet_data = dispatch_message.get('bet_data', {})
         order_id = dispatch_message.get('order_id', '')
         print(f'下单的dispatch_message : {dispatch_message}')
+
+        # 从 dispatch_message 中获取参数（如果有的话）
+        # 优先使用 dispatch_message 中的参数，否则使用函数默认参数
+        stake = dispatch_message.get('stake', stake)
+        currency = dispatch_message.get('currency', currency)
+        duration = dispatch_message.get('duration', duration)
+
+        logger.info(f"📝 下单参数:")
+        logger.info(f"  - Stake: {stake} {currency}")
+        logger.info(f"  - Duration: {duration} seconds")
+
         if not order_id or order_id not in self.order_record:
             logger.error(f"❌ order_record 中没有数据（order_id: {order_id}）")
             logger.error(f"   请先调用 GetOdd 获取赔率信息")
@@ -173,7 +207,7 @@ async def BettingOrder(
         logger.info(f"  - Stake: {stake} {currency}")
         logger.info(f"  - Duration: {duration} seconds")
 
-        from ..jsCodeExcutors.http_executors import place_order
+        from ..jsCodeExcutors.http_executors import place_order, delete_betslip
 
         order_result = await place_order(
             page=self.page,
@@ -483,12 +517,41 @@ async def BettingOrder(
         if monitor_order and final_order_state:
             # 监控完成，有最终状态
             state = final_order_state.get('state')
+            raw_status = final_order_state.get('raw_status', '').lower()
+            closed = final_order_state.get('closed', False)
+            close_reason = final_order_state.get('close_reason')
             bet_bar = final_order_state.get('bet_bar', {})
             success_count = bet_bar.get('success', 0)
             danger_count = bet_bar.get('danger', 0)
             unplaced_count = bet_bar.get('unplaced', 0)
 
-            if state == 'FINISHED':
+            # 优先级 1: 检查 API 原始状态 (raw_status)
+            if raw_status in ['failed', 'timed_out', 'rejected', 'cancelled']:
+                success = False
+                message = f'订单失败 (API状态: {raw_status}, 成功: {success_count}, 危险: {danger_count}, 未下注: {unplaced_count})'
+                logger.warning(f"\n❌ {message}")
+
+            # 优先级 2: 检查 closed 和 close_reason
+            elif closed and close_reason:
+                # 优先检查是否有成功的投注
+                if success_count > 0:
+                    # 有成功投注，即使订单关闭也算成功
+                    success = True
+                    message = f'下注成功 (成功: {success_count}, 危险: {danger_count}, 未下注: {unplaced_count}, 关闭原因: {close_reason})'
+                    logger.info(f"\n✅ {message}")
+                elif close_reason in ['timed_out', 'rejected', 'cancelled', 'expired']:
+                    # 没有成功投注，且订单关闭
+                    success = False
+                    message = f'订单关闭但无成功投注 (原因: {close_reason}, 危险: {danger_count}, 未下注: {unplaced_count})'
+                    logger.warning(f"\n❌ {message}")
+                else:
+                    # 其他关闭原因，没有成功投注
+                    success = False
+                    message = f'订单关闭但无成功投注 (原因: {close_reason}, 危险: {danger_count}, 未下注: {unplaced_count})'
+                    logger.warning(f"\n⚠️ {message}")
+
+            # 优先级 3: 检查 state 和 bet_bar
+            elif state == 'FINISHED':
                 if success_count > 0:
                     # 有成功的投注
                     success = True
@@ -499,15 +562,17 @@ async def BettingOrder(
                     success = False
                     message = f'订单完成但所有投注被拒绝 (危险: {danger_count}, 未下注: {unplaced_count})'
                     logger.warning(f"\n⚠️ {message}")
+
             elif state == 'EXPIRED_LOCAL':
                 # 订单过期
                 success = False
                 message = f'订单已过期 (成功: {success_count}, 危险: {danger_count}, 未下注: {unplaced_count})'
                 logger.warning(f"\n⏱️ {message}")
+
             else:
                 # 其他状态
                 success = False
-                message = f'订单状态异常: {state}'
+                message = f'订单状态异常 (state: {state}, raw_status: {raw_status})'
                 logger.warning(f"\n⚠️ {message}")
 
         elif monitor_order and found_order and not final_order_state:
@@ -566,3 +631,15 @@ async def BettingOrder(
             'message': f'下注流程异常: {str(e)}',
             'error': str(e)
         }
+    finally:
+        # 统一清理 betslip (无论成功、失败还是异常)
+        if betslip_id:
+            logger.info(f"\n🗑️ 清理 Betslip: {betslip_id}")
+            try:
+                delete_result = await delete_betslip(self.page, betslip_id)
+                if delete_result.get('success'):
+                    logger.info(f"✅ Betslip 已清理")
+                else:
+                    logger.warning(f"⚠️ Betslip 清理失败: {delete_result.get('error')}")
+            except Exception as e:
+                logger.warning(f"⚠️ Betslip 清理异常: {e}")

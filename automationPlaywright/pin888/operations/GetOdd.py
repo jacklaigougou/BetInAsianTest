@@ -24,6 +24,29 @@ from ..jsCodeExecutors import request_all_odds_selections
 logger = logging.getLogger(__name__)
 
 
+def _create_error_response(handler_name: str, order_id: str, message: str) -> Dict[str, Any]:
+    """
+    创建统一的错误响应格式
+
+    Args:
+        handler_name: 处理器名称
+        order_id: 订单ID（可能为空）
+        message: 错误消息
+
+    Returns:
+        统一格式的错误响应
+    """
+    return {
+        'success': False,
+        'handler_name': handler_name,
+        'order_id': order_id if order_id else '',
+        'message': message,
+        'platform_odd': None,
+        'platform_max_stake': None,
+        'timestamp': time.time()
+    }
+
+
 def transfan_sport(sport_type: str) -> Tuple[Optional[int], Optional[str]]:
     """
     转换运动类型 → (sportId, period_num)
@@ -103,12 +126,12 @@ async def GetOdd(
 
     if not bet_data:
         logger.error(f"[{handler_name}] msg缺少必要参数 bet_data")
-        return {'success': False, 'message': 'msg缺少必要参数 bet_data'}
+        return _create_error_response(handler_name, dispatch_message.get('order_id', ''), 'msg缺少必要参数 bet_data')
 
     order_id = dispatch_message.get('order_id', '')
     if not order_id:
         logger.error(f"[{handler_name}] msg 缺少必要参数 order_id")
-        return {'success': False, 'message': 'msg 缺少必要参数 order_id'}
+        return _create_error_response(handler_name, '', 'msg 缺少必要参数 order_id')
 
 
 
@@ -127,7 +150,7 @@ async def GetOdd(
 
     if not sportId:
         logger.error(f"[{handler_name}] 不支持的运动类型: {sport_type}")
-        return {'success': False, 'message': f'不支持的运动类型: {sport_type}'}
+        return _create_error_response(handler_name, order_id, f'不支持的运动类型: {sport_type}')
 
     logger.info(f"[{handler_name}] ✅ 参数提取成功: order_id={order_id}, sport_type={sport_type}, event_id={matched_event_id}")
 
@@ -147,7 +170,7 @@ async def GetOdd(
 
         if not all_events:
             logger.error(f"[{handler_name}] 获取 all_events 失败")
-            return {'success': False, 'message': '获取 all_events 失败'}
+            return _create_error_response(handler_name, order_id, '获取 all_events 失败')
 
         spider_home = bet_data.get('spider_home', '')
         spider_away = bet_data.get('spider_away', '')
@@ -156,7 +179,7 @@ async def GetOdd(
 
         if not parsed_result:
             logger.error(f"[{handler_name}] 未能从 all_events 中匹配到比赛")
-            return {'success': False, 'message': '未能从 all_events 中匹配到比赛'}
+            return _create_error_response(handler_name, order_id, '未能从 all_events 中匹配到比赛')
 
         matched_event_id = parsed_result['event_id']
         event_id = matched_event_id
@@ -168,14 +191,14 @@ async def GetOdd(
         event_detail_data = await subscribe_events_detail_euro(self.page, matched_event_id)
         if not event_detail_data:
             logger.error(f"[{handler_name}] 没有该场比赛 {spider_home} -- {spider_away}")
-            return {'success': False, 'message': f'没有该场比赛 {spider_home} -- {spider_away}'}
+            return _create_error_response(handler_name, order_id, f'没有该场比赛 {spider_home} -- {spider_away}')
 
     # 2.3 提取标准球队名称和剩余时间
     team_names_result = parse_team_names_from_detail_data(event_detail_data)
 
     if not team_names_result:
         logger.error(f"[{handler_name}] 未能提取标准球队名称")
-        return {'success': False, 'message': '未能提取标准球队名称'}
+        return _create_error_response(handler_name, order_id, '未能提取标准球队名称')
 
     pin888_standard_home_name = team_names_result['pin888_home_name']
     pin888_standard_away_name = team_names_result['pin888_away_name']
@@ -188,7 +211,7 @@ async def GetOdd(
 
     if not remaining_time:
         logger.error(f"[{handler_name}] 未能分析剩余时间")
-        return {'success': False, 'message': '未能分析剩余时间'}
+        return _create_error_response(handler_name, order_id, '未能分析剩余时间')
 
     match_phase = remaining_time['match_phase']
     remaining_seconds = remaining_time['remaining_seconds']
@@ -217,7 +240,7 @@ async def GetOdd(
     if mapping_result is None:
         logger.error(f"[{handler_name}] Mapping 返回 None,不支持此盘口或时段")
         await unsubscribe_events_detail_euro(self.page, event_id)
-        return {'success': False, 'message': 'Mapping 返回 None,不支持此盘口或时段'}
+        return _create_error_response(handler_name, order_id, 'Mapping 返回 None,不支持此盘口或时段')
 
     mapped_market = mapping_result['mapped_market']
     mapped_handicap = mapping_result['mapped_handicap']
@@ -247,12 +270,12 @@ async def GetOdd(
     if odds_result == 'need refresh':
         logger.warning(f"[{handler_name}] 需要刷新详细赔率数据")
         await unsubscribe_events_detail_euro(self.page, event_id)
-        return {'success': False, 'message': '需要刷新详细赔率数据'}
+        return _create_error_response(handler_name, order_id, '需要刷新详细赔率数据')
 
     if not odds_result:
         logger.error(f"[{handler_name}] 未能从详细赔率数据中找到匹配的赔率")
         await unsubscribe_events_detail_euro(self.page, event_id)
-        return {'success': False, 'message': '未能从详细赔率数据中找到匹配的赔率'}
+        return _create_error_response(handler_name, order_id, '未能从详细赔率数据中找到匹配的赔率')
 
     parsed_odd = odds_result.get('odd')
     parsed_lineID = odds_result.get('lineID')
@@ -285,7 +308,7 @@ async def GetOdd(
     if not mapping_result:
         logger.error(f"[{handler_name}] 映射失败")
         await unsubscribe_events_detail_euro(self.page, event_id)
-        return {'success': False, 'message': '映射失败'}
+        return _create_error_response(handler_name, order_id, '映射失败')
 
     oddsID = mapping_result['oddsID']
     oddsSelectionsType = mapping_result['oddsSelectionsType']
@@ -309,7 +332,7 @@ async def GetOdd(
     if not response:
         logger.error(f"[{handler_name}] 请求 [添加订单] 失败")
         await unsubscribe_events_detail_euro(self.page, event_id)
-        return {'success': False, 'message': '请求 [添加订单] 失败'}
+        return _create_error_response(handler_name, order_id, '请求 [添加订单] 失败')
 
     # 解析响应数据
     try:
@@ -317,7 +340,7 @@ async def GetOdd(
         if not response_data or len(response_data) == 0:
             logger.error(f"[{handler_name}] [添加订单] 响应数据为空")
             await unsubscribe_events_detail_euro(self.page, event_id)
-            return {'success': False, 'message': '[添加订单] 响应数据为空'}
+            return _create_error_response(handler_name, order_id, '[添加订单] 响应数据为空')
 
         data = response_data[0]
 
@@ -331,13 +354,13 @@ async def GetOdd(
             logger.warning(f"[{handler_name}] [添加订单]成功,但已封盘,不能下单")
             await self._send_message_to_electron('[添加订单]成功,但已封盘,不能下单')
             await unsubscribe_events_detail_euro(self.page, event_id)
-            return {'success': False, 'message': '盘口已封盘'}
+            return _create_error_response(handler_name, order_id, '盘口已封盘')
 
         if not oddsID or odds is None:
             logger.error(f"[{handler_name}] [添加订单]成功,但回复数据不完整")
             await self._send_message_to_electron('[添加订单]成功,但回复数据不完整')
             await unsubscribe_events_detail_euro(self.page, event_id)
-            return {'success': False, 'message': '回复数据不完整'}
+            return _create_error_response(handler_name, order_id, '回复数据不完整')
 
         # 存储订单记录
         self.order_record[order_id] = {
@@ -388,4 +411,4 @@ async def GetOdd(
     except Exception as e:
         logger.error(f"[{handler_name}] 解析响应数据失败: {e}", exc_info=True)
         await unsubscribe_events_detail_euro(self.page, event_id)
-        return {'success': False, 'message': f'解析响应数据失败: {str(e)}'}
+        return _create_error_response(handler_name, order_id, f'解析响应数据失败: {str(e)}')

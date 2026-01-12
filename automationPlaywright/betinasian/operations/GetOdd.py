@@ -9,10 +9,33 @@ import time
 from utils.matchGameName import fuzzy_match_teams
 from ..jsCodeExcutors.queries.events.query_events import query_betinasian_events, query_active_markets, get_event_score
 from ..MappingBetburgerToBetinisian import build_bet_type_from_spider
-from ..jsCodeExcutors.http_executors import create_betslip
+from ..jsCodeExcutors.http_executors import create_betslip, delete_betslip
 from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id, wait_for_pmm_ready
 
 logger = logging.getLogger(__name__)
+
+
+def _create_error_response(handler_name: str, order_id: str, message: str) -> Dict[str, Any]:
+    """
+    创建统一的错误响应格式
+
+    Args:
+        handler_name: 处理器名称
+        order_id: 订单ID（可能为空）
+        message: 错误消息
+
+    Returns:
+        统一格式的错误响应
+    """
+    return {
+        'success': False,
+        'handler_name': handler_name if handler_name else '',
+        'order_id': order_id if order_id else '',
+        'message': message,
+        'platform_odd': None,
+        'platform_max_stake': None,
+        'timestamp': time.time()
+    }
 
 
 async def get_event_key_by_team_name(
@@ -195,20 +218,14 @@ async def GetOdd(
     # 检查 page 是否有效
     if not self.page:
         print("❌ self.page 为 None，无法执行 GetOdd")
-        return {
-            'success': False,
-            'message': 'page 对象为 None，请先执行 prepare_work()'
-        }
+        return _create_error_response('', '', 'page 对象为 None，请先执行 prepare_work()')
 
     try:
         print(f"  - page.url: {self.page.url}")
         print(f"  - page.is_closed: {self.page.is_closed()}")
     except Exception as e:
         logger.error(f"❌ 无法访问 page 对象: {e}")
-        return {
-            'success': False,
-            'message': f'page 对象无效: {e}'
-        }
+        return _create_error_response('', '', f'page 对象无效: {e}')
 
     logger.info(f"  - dispatch_message: {dispatch_message}")
 
@@ -264,6 +281,14 @@ async def GetOdd(
         print(f"  - 查询的主队: {spider_home}")
         print(f"  - 查询的客队: {spider_away}")
         print(f"  - 运动类型: {spider_sport_type}")
+
+        # 补充缺失的字段
+        match_result['handler_name'] = handler_name
+        match_result['order_id'] = order_id
+        match_result['platform_odd'] = None
+        match_result['platform_max_stake'] = None
+        match_result['timestamp'] = time.time()
+
         return match_result
 
     event = match_result.get('event')
@@ -318,10 +343,7 @@ async def GetOdd(
     # 4. 验证必需参数
     if not spider_market_id:
         logger.error(f"❌ 缺少必需参数: spider_market_id")
-        return {
-            'success': False,
-            'message': '缺少必需参数: spider_market_id'
-        }
+        return _create_error_response(handler_name, order_id, '缺少必需参数: spider_market_id')
 
     print(f"\n📊 盘口参数:")
     print(f"  - Spider Market ID: {spider_market_id}")
@@ -349,10 +371,11 @@ async def GetOdd(
         print(f"  - Spider Market ID: {spider_market_id}")
         print(f"  - Sport Type: {spider_sport_type}")
         print(f"  - Handicap Value: {spider_handicap_value}")
-        return {
-            'success': False,
-            'message': f'无法映射 market ID: {spider_market_id} (sport: {spider_sport_type})'
-        }
+        return _create_error_response(
+            handler_name,
+            order_id,
+            f'无法映射 market ID: {spider_market_id} (sport: {spider_sport_type})'
+        )
 
     print(f"\n✅ Bet Type 构造成功:")
     print(f"  - Bet Type: {bet_type}")
@@ -382,7 +405,12 @@ async def GetOdd(
         logger.error(f"  - 完整响应: {betslip_result}")
         return {
             'success': False,
+            'handler_name': handler_name,
+            'order_id': order_id,
             'message': f"Betslip 创建失败: {betslip_result.get('error')}",
+            'platform_odd': None,
+            'platform_max_stake': None,
+            'timestamp': time.time(),
             'event_id': event_id,
             'event_key': event_key,
             'bet_type': bet_type,
@@ -410,9 +438,18 @@ async def GetOdd(
         print(f"  - betslip_result keys: {list(betslip_result.keys())}")
         print(f"  - betslip_data keys: {list(betslip_data.keys())}")
         print(f"  - 完整响应: {betslip_result}")
+
+        # ⚠️ 无法清理 betslip（因为没有 betslip_id）
+        logger.warning("⚠️ Betslip 已创建但无法提取 ID，无法清理")
+
         return {
             'success': False,
+            'handler_name': handler_name,
+            'order_id': order_id,
             'message': 'Betslip 创建成功但无法提取 betslip_id',
+            'platform_odd': None,
+            'platform_max_stake': None,
+            'timestamp': time.time(),
             'betslip_result': betslip_result
         }
 
@@ -447,6 +484,29 @@ async def GetOdd(
         print(f"  - 更新次数: {wait_result.get('update_count')}")
         print(f"  - 最佳价格: {wait_result.get('best_price')}")
         print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
+
+        # 清理 betslip
+        logger.info(f"🗑️ 清理 Betslip: {betslip_id}")
+        try:
+            delete_result = await delete_betslip(self.page, betslip_id)
+            if delete_result.get('success'):
+                logger.info(f"✅ Betslip 已清理")
+            else:
+                logger.warning(f"⚠️ Betslip 清理失败: {delete_result.get('error')}")
+        except Exception as e:
+            logger.warning(f"⚠️ Betslip 清理异常: {e}")
+
+        return {
+            'success': False,
+            'handler_name': handler_name,
+            'order_id': order_id,
+            'message': f"PMM 数据未准备好: {wait_result.get('reason')}",
+            'platform_odd': None,
+            'platform_max_stake': None,
+            'timestamp': time.time(),
+            'betslip_id': betslip_id,
+            'wait_result': wait_result
+        }
     else:
         print(f"\n✅ PMM 数据已准备:")
         print(f"  - 耗时: {wait_result.get('elapsed')}ms")
@@ -480,6 +540,29 @@ async def GetOdd(
         logger.warning(f"  - 原因: {best_price_result.get('reason')}")
         if best_price_result.get('best_odds'):
             logger.warning(f"  - 最高赔率(不可执行): {best_price_result.get('best_odds')}")
+
+        # 清理 betslip
+        logger.info(f"🗑️ 清理 Betslip: {betslip_id}")
+        try:
+            delete_result = await delete_betslip(self.page, betslip_id)
+            if delete_result.get('success'):
+                logger.info(f"✅ Betslip 已清理")
+            else:
+                logger.warning(f"⚠️ Betslip 清理失败: {delete_result.get('error')}")
+        except Exception as e:
+            logger.warning(f"⚠️ Betslip 清理异常: {e}")
+
+        return {
+            'success': False,
+            'handler_name': handler_name,
+            'order_id': order_id,
+            'message': f"未找到可执行赔率: {best_price_result.get('reason')}",
+            'platform_odd': None,
+            'platform_max_stake': None,
+            'timestamp': time.time(),
+            'betslip_id': betslip_id,
+            'best_price_result': best_price_result
+        }
 
     # 9. 存储订单记录
     self.order_record[order_id] = {
