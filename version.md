@@ -121,3 +121,6 @@ BIA 查询完全过关
 
 # v1.1.38
 删除订单失效,同时修复bug ,betting_order 中需要使用BGP ,而不是usd
+
+# v1.1.39
+篮球 映射sport参数 修改

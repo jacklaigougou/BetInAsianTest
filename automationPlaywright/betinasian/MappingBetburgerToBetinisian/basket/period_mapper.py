@@ -36,10 +36,26 @@ PERIOD_TO_SPORT = {
     "Full Time": "basket",
     "1st half": "basket_ht",
     "2nd half": "basket",  # 注意: 2nd half 映射到 basket (全场)
+
+    # 第1节 - 支持正确和错误拼写
     "1st qtr": "basket_q1",
+    "1rd qtr": "basket_q1",  # 容错：1rd → 1st
+    "1th qtr": "basket_q1",  # 容错：1th → 1st
+
+    # 第2节 - 支持正确和错误拼写
     "2nd qtr": "basket_q2",
+    "2rd qtr": "basket_q2",  # 容错：2rd → 2nd
+    "2th qtr": "basket_q2",  # 容错：2th → 2nd
+
+    # 第3节 - 支持正确和错误拼写
     "3rd qtr": "basket_q3",
-    "4th qtr": "basket_q4"
+    "3nd qtr": "basket_q3",  # 容错：3nd → 3rd
+    "3th qtr": "basket_q3",  # 容错：3th → 3rd
+
+    # 第4节 - 支持正确和错误拼写
+    "4th qtr": "basket_q4",
+    "4rd qtr": "basket_q4",  # 容错：4rd → 4th
+    "4nd qtr": "basket_q4"   # 容错：4nd → 4th
 }
 
 
