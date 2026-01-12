@@ -240,6 +240,7 @@ async def GetOdd(
     spider_sport_type = bet_data.get('spider_sport_type')
     spider_market_id = str(bet_data.get('spider_market_id'))  # 转换为字符串
     spider_handicap_value = bet_data.get('spider_handicap_value')
+    spider_period = bet_data.get('spider_period', 'Full Time')  # 默认全场
 
     print(f"\n{'='*60}")
     print(f"📋 GetOdd 参数:")
@@ -248,6 +249,7 @@ async def GetOdd(
     print(f"  - 运动类型: {spider_sport_type}")
     print(f"  - Market ID: {spider_market_id}")
     print(f"  - Handicap Value: {spider_handicap_value}")
+    print(f"  - Period: {spider_period}")
     print(f"{'='*60}\n")
 
     # 2. 将爬虫运动类型转换为 betinasian 运动类型  如: basketball -> basket,soccer -> fb
@@ -266,7 +268,8 @@ async def GetOdd(
     print(f"  - 查询运动类型: {spider_sport_type}")
     print(f"  - 查询主队: {spider_home}")
     print(f"  - 查询客队: {spider_away}")
-
+    
+    # window.queryData.inRunningSport,获取所有的正在进行的比赛,并进行匹配
     match_result = await get_event_key_by_team_name(
         self,
         spider_home=spider_home,
@@ -380,11 +383,38 @@ async def GetOdd(
     print(f"\n✅ Bet Type 构造成功:")
     print(f"  - Bet Type: {bet_type}")
 
+    # 5.5 映射 spider_period 到 BetInAsian sport
+    betinasian_sport = spider_sport_type
+
+    # 足球时段映射
+    if spider_sport_type in ['fb', 'soccer']:
+        from ..MappingBetburgerToBetinisian.soccer.period_mapper import map_period_to_sport
+        betinasian_sport = map_period_to_sport(
+            spider_period=spider_period,
+            spider_market_id=spider_market_id
+        )
+        if betinasian_sport != spider_sport_type:
+            print(f"\n🔄 Period 映射 (足球):")
+            print(f"  - Spider Period: {spider_period}")
+            print(f"  - Spider Market ID: {spider_market_id}")
+            print(f"  - 映射前: {spider_sport_type}")
+            print(f"  - 映射后: {betinasian_sport}")
+
+    # 篮球时段映射
+    elif spider_sport_type in ['basket', 'basketball']:
+        from ..MappingBetburgerToBetinisian.basket.period_mapper import map_period_to_sport
+        betinasian_sport = map_period_to_sport(spider_period=spider_period)
+        if betinasian_sport != spider_sport_type:
+            print(f"\n🔄 Period 映射 (篮球):")
+            print(f"  - Spider Period: {spider_period}")
+            print(f"  - 映射前: {spider_sport_type}")
+            print(f"  - 映射后: {betinasian_sport}")
+
     # 6. 调用 create_betslip, 申请一个 betslip ,并且会触发 ws 中接收 pmm 的数据.
     print(f"\n{'='*60}")
     print(f"📋 创建 Betslip")
     print(f"{'='*60}")
-    print(f"  - Sport: {spider_sport_type}")
+    print(f"  - Sport: {betinasian_sport}")
     print(f"  - Event ID: {event_id}")
     print(f"  - Bet Type: {bet_type}")
     print(f"  - Event: {event.get('home')} vs {event.get('away')}")
@@ -392,7 +422,7 @@ async def GetOdd(
 
     betslip_result = await create_betslip(
         page=self.page,
-        sport=spider_sport_type,
+        sport=betinasian_sport,
         event_id=event_id,
         bet_type=bet_type
     )

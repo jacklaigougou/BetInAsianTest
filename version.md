@@ -112,3 +112,6 @@ BIA 查询完全过关
 
 # v1.1.35
 加入取消订阅的http请求,并在getodd 和 betting中使用
+
+# v1.1.36
+在python中加入 sports 字段的判断.也就是添加了ht等关于第几节的判断

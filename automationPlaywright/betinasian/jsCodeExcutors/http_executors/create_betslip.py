@@ -25,7 +25,12 @@ async def create_betslip(
 
     Args:
         page: Playwright Page object
-        sport: Sport type (e.g., "basket", "fb")
+        sport: Sport type
+            - Basketball: "basket" (全场), "basket_ht" (半场),
+                         "basket_q1" (第1节), "basket_q2" (第2节),
+                         "basket_q3" (第3节), "basket_q4" (第4节)
+            - Soccer: "fb" (全场), "fb_ht" (半场), "fb_et" (加时赛),
+                     "fb_corn" (全场角球), "fb_corn_ht" (半场角球)
         event_id: Event ID (e.g., "2026-01-06,41024,40990")
         bet_type: Bet type (e.g., "for,ml,a" or "for,ah,h,-22")
         betslip_type: Betslip type (default: "normal")
