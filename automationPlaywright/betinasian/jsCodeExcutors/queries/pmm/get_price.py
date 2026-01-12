@@ -344,12 +344,42 @@ async def get_price_by_betslip_id(
                 // Extract best executable price
                 const now = Date.now();
                 const validBookies = [];
+                const debugInfo = {
+                    total_bookies: betslip.bookies.size,
+                    filtered_bookies: {}
+                };
 
                 for (const [bookie, data] of betslip.bookies) {
-                    // Filter: success status, not expired, correct currency
-                    if (data.status.code !== 'success') continue;
-                    if (data.expires_at && data.expires_at < now) continue;
-                    if (!data.top_available || data.top_available.currency !== params.required_currency) continue;
+                    const bookieDebug = {
+                        status_code: data.status?.code,
+                        has_top_available: !!data.top_available,
+                        currency: data.top_available?.currency,
+                        top_price: data.top_price,
+                        price_tiers_count: data.price_tiers?.length || 0,
+                        last_update: data.last_update,
+                        age_ms: now - data.last_update
+                    };
+
+                    // Filter: success status
+                    if (data.status.code !== 'success') {
+                        bookieDebug.filtered_reason = 'status_not_success';
+                        debugInfo.filtered_bookies[bookie] = bookieDebug;
+                        continue;
+                    }
+
+                    // Filter: not expired
+                    if (data.expires_at && data.expires_at < now) {
+                        bookieDebug.filtered_reason = 'expired';
+                        debugInfo.filtered_bookies[bookie] = bookieDebug;
+                        continue;
+                    }
+
+                    // Filter: correct currency
+                    if (!data.top_available || data.top_available.currency !== params.required_currency) {
+                        bookieDebug.filtered_reason = 'currency_mismatch';
+                        debugInfo.filtered_bookies[bookie] = bookieDebug;
+                        continue;
+                    }
 
                     // Check if any tier meets required_amount
                     const executableTier = data.price_tiers.find(tier =>
@@ -357,14 +387,22 @@ async def get_price_by_betslip_id(
                     );
 
                     if (executableTier) {
+                        bookieDebug.filtered_reason = 'passed';
+                        bookieDebug.executable_tier = executableTier;
+                        debugInfo.filtered_bookies[bookie] = bookieDebug;
+
                         validBookies.push({
                             bookie: bookie,
                             price: executableTier.price,
-                            available: data.top_available,  // 修复：使用 top_available 而不是 available
+                            available: data.top_available,
                             status: data.status,
                             updated_at: data.last_update,
                             tier: executableTier
                         });
+                    } else {
+                        bookieDebug.filtered_reason = 'no_executable_tier';
+                        bookieDebug.price_tiers = data.price_tiers;
+                        debugInfo.filtered_bookies[bookie] = bookieDebug;
                     }
                 }
 
@@ -374,7 +412,8 @@ async def get_price_by_betslip_id(
                         reason: 'no_executable_price',
                         betslip_id: betslip.betslip_id,
                         event_id: betslip.event_id,
-                        bet_type: betslip.bet_type
+                        bet_type: betslip.bet_type,
+                        debug_info: debugInfo  // 添加调试信息
                     };
                 }
 
@@ -417,6 +456,23 @@ async def get_price_by_betslip_id(
         else:
             logger.warning(f"⚠️ No executable price: {result.get('reason')}")
             logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
+
+            # 输出详细的调试信息
+            debug_info = result.get('debug_info')
+            if debug_info:
+                logger.info(f"\n🔍 调试信息:")
+                logger.info(f"  - 总 Bookie 数: {debug_info.get('total_bookies')}")
+                logger.info(f"\n  各 Bookie 过滤原因:")
+                for bookie, info in debug_info.get('filtered_bookies', {}).items():
+                    logger.info(f"\n    [{bookie}]")
+                    logger.info(f"      - 过滤原因: {info.get('filtered_reason')}")
+                    logger.info(f"      - 状态码: {info.get('status_code')}")
+                    logger.info(f"      - 货币: {info.get('currency')}")
+                    logger.info(f"      - 最高价格: {info.get('top_price')}")
+                    logger.info(f"      - 价格层级数: {info.get('price_tiers_count')}")
+                    logger.info(f"      - 数据年龄: {info.get('age_ms')}ms")
+                    if info.get('filtered_reason') == 'no_executable_tier':
+                        logger.info(f"      - 价格层级: {info.get('price_tiers')}")
 
         return result
 

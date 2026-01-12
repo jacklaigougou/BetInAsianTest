@@ -212,9 +212,9 @@ async def GetOdd(
             True
     """
     # 🔍 调试日志：检查 self.page 状态
-    print(f"🔍 [DEBUG] GetOdd 开始执行")
-    print(f"  - self.page: {self.page}")
-    print(f'dispatch_message : {dispatch_message}')
+    # print(f"🔍 [DEBUG] GetOdd 开始执行")
+    # print(f"  - self.page: {self.page}")
+    # print(f'dispatch_message : {dispatch_message}')
     # 检查 page 是否有效
     if not self.page:
         print("❌ self.page 为 None，无法执行 GetOdd")
@@ -227,7 +227,7 @@ async def GetOdd(
         logger.error(f"❌ 无法访问 page 对象: {e}")
         return _create_error_response('', '', f'page 对象无效: {e}')
 
-    logger.info(f"  - dispatch_message: {dispatch_message}")
+    # logger.info(f"  - dispatch_message: {dispatch_message}")
 
     # 1. 提取参数 (从 bet_data 中获取)
     original_msg = dispatch_message  # 保存原始消息

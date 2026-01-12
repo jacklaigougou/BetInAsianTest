@@ -24,7 +24,7 @@ async def BettingOrder(
     currency: str = "USD",
     duration: int = 10,
     required_amount: float = 10.0,
-    required_currency: str = "USD",
+    required_currency: str = "GBP",  # 修改为 GBP，与 GetOdd 保持一致
     wait_for_order: bool = True,
     **kwargs
 ) -> Dict[str, Any]:
@@ -44,7 +44,7 @@ async def BettingOrder(
         currency: 货币 (默认: "USD")
         duration: 订单有效期（秒，默认: 10）
         required_amount: PMM 查询所需金额 (默认: 10.0)
-        required_currency: PMM 查询所需货币 (默认: "USD")
+        required_currency: PMM 查询所需货币 (默认: "GBP")
         wait_for_order: 是否等待订单数据 (默认: True)
         **kwargs: 额外参数
             - monitor_order: 是否监控订单状态 (默认: True)
@@ -116,7 +116,7 @@ async def BettingOrder(
 
         # bet_data = dispatch_message.get('bet_data', {})
         order_id = dispatch_message.get('order_id', '')
-        print(f'下单的dispatch_message : {dispatch_message}')
+        # print(f'下单的dispatch_message : {dispatch_message}')
 
         # 从 dispatch_message 中获取参数（如果有的话）
         # 优先使用 dispatch_message 中的参数，否则使用函数默认参数
