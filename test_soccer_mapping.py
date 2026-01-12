@@ -228,7 +228,7 @@ def test_basketball_compatibility():
             "sport": "basket",
             "market_id": "19",
             "handicap": 170,
-            "expected": "for,ahou,o,680"
+            "expected": "for,ahover,680"
         },
     ]
 

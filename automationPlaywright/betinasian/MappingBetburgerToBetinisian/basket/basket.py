@@ -75,16 +75,14 @@ SPIDER_TO_BETINASIAN_MARKET = {
         "has_line": True
     },
 
-    # Over/Under (Full Time) -> ahou
+    # Over/Under (Full Time) -> ahover/ahunder (no side parameter)
     "19": {
-        "betinasian_market": "ahou",
-        "betinasian_side": "o",  # over
+        "betinasian_market": "ahover",
         "description": "Over/Under - Over",
         "has_line": True  # has line value (e.g., 170)
     },
     "20": {
-        "betinasian_market": "ahou",
-        "betinasian_side": "u",  # under
+        "betinasian_market": "ahunder",
         "description": "Over/Under - Under",
         "has_line": True
     },
@@ -147,8 +145,7 @@ def parse_spider_market(spider_market_id: str, handicap_value: float = None):
 
         >>> parse_spider_market("19", 170)
         {
-            "betinasian_market": "ahou",
-            "betinasian_side": "o",
+            "betinasian_market": "ahover",
             "line_id": 680,
             "description": "Over/Under - Over"
         }

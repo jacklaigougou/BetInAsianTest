@@ -231,32 +231,36 @@ SPIDER_TO_BETINASIAN_MARKET = {
         "description": "Odd/Even - Even"
     },
 
-    # Corners Asian Handicap -> corners_ah
+    # Corners Asian Handicap -> ah (使用和普通盘口相同的市场名称)
     "49": {
-        "betinasian_market": "corners_ah",
+        "betinasian_market": "ah",
         "betinasian_side": "h",  # home
         "description": "Corners Asian Handicap - Home",
-        "has_line": True  # has line value (e.g., -2.5)
+        "has_line": True,  # has line value (e.g., -2.5)
+        "use_ir_format": True  # 使用 IR 格式
     },
     "50": {
-        "betinasian_market": "corners_ah",
+        "betinasian_market": "ah",
         "betinasian_side": "a",  # away
         "description": "Corners Asian Handicap - Away",
-        "has_line": True
+        "has_line": True,
+        "use_ir_format": True  # 使用 IR 格式
     },
 
-    # Corners Over/Under -> corners_ou
+    # Corners Over/Under -> ahover/ahunder (使用和普通盘口相同的市场名称)
     "51": {
-        "betinasian_market": "corners_ou",
-        "betinasian_side": "o",  # over
+        "betinasian_market": "ahover",
+        "betinasian_side": None,  # Over/Under 不需要 side
         "description": "Corners Over/Under - Over",
-        "has_line": True  # has line value (e.g., 10.5)
+        "has_line": True,  # has line value (e.g., 10.5)
+        "use_ir_format": True  # 使用 IR 格式
     },
     "52": {
-        "betinasian_market": "corners_ou",
-        "betinasian_side": "u",  # under
+        "betinasian_market": "ahunder",
+        "betinasian_side": None,  # Over/Under 不需要 side
         "description": "Corners Over/Under - Under",
-        "has_line": True
+        "has_line": True,
+        "use_ir_format": True  # 使用 IR 格式
     },
 
     # No Goal -> ng

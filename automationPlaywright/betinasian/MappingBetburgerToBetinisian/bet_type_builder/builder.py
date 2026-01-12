@@ -72,7 +72,7 @@ def build(mapping: Dict[str, Any], home_score: int = 0, away_score: int = 0) -> 
         >>> build(mapping)
         "for,ir,0,0,ahover,10"
 
-        >>> # Standard format with line (Basketball)
+        >>> # Standard format with line (Basketball Asian Handicap)
         >>> mapping = {
         ...     "betinasian_market": "ah",
         ...     "betinasian_side": "h",
@@ -80,6 +80,14 @@ def build(mapping: Dict[str, Any], home_score: int = 0, away_score: int = 0) -> 
         ... }
         >>> build(mapping)
         "for,ah,h,-22"
+
+        >>> # Basketball Over/Under (ahover/ahunder without side)
+        >>> mapping = {
+        ...     "betinasian_market": "ahover",
+        ...     "line_id": 680
+        ... }
+        >>> build(mapping)
+        "for,ahover,680"
 
         >>> # Standard format without line (Basketball Money Line)
         >>> mapping = {
@@ -149,6 +157,13 @@ def build(mapping: Dict[str, Any], home_score: int = 0, away_score: int = 0) -> 
     # 4. Standard format (Basketball, etc.)
     market = mapping.get('betinasian_market')
     side = mapping.get('betinasian_side')
+
+    # Special handling for Basketball Over/Under (ahover/ahunder without side)
+    if market in ['ahover', 'ahunder']:
+        line_id = mapping.get('line_id')
+        if line_id is None:
+            return None
+        return f"for,{market},{line_id}"
 
     # Validate required fields
     if not market or not side:

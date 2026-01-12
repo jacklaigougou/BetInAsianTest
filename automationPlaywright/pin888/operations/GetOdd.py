@@ -116,10 +116,10 @@ async def GetOdd(
     handler_name = self.handler_name
     self._is_SupplementaryOrder = False
 
-    logger.info(f"[{handler_name}] ========== 开始 GetOdd 流程 ==========")
+    # logger.info(f"[{handler_name}] ========== 开始 GetOdd 流程 ==========")
 
     # ========== Step 1: 参数提取与验证 ==========
-    logger.info(f"[{handler_name}] Step 1: 参数提取与验证")
+    # logger.info(f"[{handler_name}] Step 1: 参数提取与验证")
 
     original_msg = dispatch_message
     bet_data = dispatch_message.get('bet_data', {})
@@ -152,10 +152,10 @@ async def GetOdd(
         logger.error(f"[{handler_name}] 不支持的运动类型: {sport_type}")
         return _create_error_response(handler_name, order_id, f'不支持的运动类型: {sport_type}')
 
-    logger.info(f"[{handler_name}] ✅ 参数提取成功: order_id={order_id}, sport_type={sport_type}, event_id={matched_event_id}")
+    # logger.info(f"[{handler_name}] ✅ 参数提取成功: order_id={order_id}, sport_type={sport_type}, event_id={matched_event_id}")
 
     # ========== Step 2: 获取比赛事件数据 ==========
-    logger.info(f"[{handler_name}] Step 2: 获取比赛事件数据")
+    # logger.info(f"[{handler_name}] Step 2: 获取比赛事件数据")
 
     
 
@@ -186,7 +186,7 @@ async def GetOdd(
         pin888_standard_home_name = parsed_result['home_name']
         pin888_standard_away_name = parsed_result['away_name']
 
-        logger.info(f"[{handler_name}] ✅ 通过球队名匹配成功: {pin888_standard_home_name} vs {pin888_standard_away_name}")
+        # logger.info(f"[{handler_name}] ✅ 通过球队名匹配成功: {pin888_standard_home_name} vs {pin888_standard_away_name}")
 
         event_detail_data = await subscribe_events_detail_euro(self.page, matched_event_id)
         if not event_detail_data:
@@ -204,7 +204,7 @@ async def GetOdd(
     pin888_standard_away_name = team_names_result['pin888_away_name']
     matchStateType = team_names_result['matchStateType']
 
-    logger.info(f"[{handler_name}] ✅ 提取标准球队名称: {pin888_standard_home_name} vs {pin888_standard_away_name}")
+    # logger.info(f"[{handler_name}] ✅ 提取标准球队名称: {pin888_standard_home_name} vs {pin888_standard_away_name}")
 
     # 分析剩余时间
     remaining_time = analyze_remaining_time(match_state_type=matchStateType, sport_type=sport_type)
@@ -224,7 +224,7 @@ async def GetOdd(
     await self._send_message_to_electron(f"剩余时间: {match_phase} - {time_display} ({remaining_seconds}秒)")
 
     # ========== Step 3: 映射盘口参数 ==========
-    logger.info(f"[{handler_name}] Step 3: 映射盘口参数")
+    # logger.info(f"[{handler_name}] Step 3: 映射盘口参数")
 
     
 
@@ -249,10 +249,10 @@ async def GetOdd(
     mapped_direction = mapping_result.get('mapped_direction', '')
     mapped_match = mapping_result.get('mapped_match', '')
 
-    logger.info(f"[{handler_name}] ✅ 映射成功: market={mapped_market}, handicap={mapped_handicap}")
+    # logger.info(f"[{handler_name}] ✅ 映射成功: market={mapped_market}, handicap={mapped_handicap}")
 
     # ========== Step 4: 查找赔率 ==========
-    logger.info(f"[{handler_name}] Step 4: 查找赔率")
+    # logger.info(f"[{handler_name}] Step 4: 查找赔率")
 
    
 
@@ -284,10 +284,10 @@ async def GetOdd(
     parsed_specials_i = odds_result.get('specials_i')
     parsed_specials_event_id = odds_result.get('specials_event_id')
 
-    logger.info(f"[{handler_name}] ✅ 成功解析赔率: odd={parsed_odd}, lineID={parsed_lineID}")
+    # logger.info(f"[{handler_name}] ✅ 成功解析赔率: odd={parsed_odd}, lineID={parsed_lineID}")
 
     # ========== Step 5: 构造下单参数 ==========
-    logger.info(f"[{handler_name}] Step 5: 构造下单参数")
+    # logger.info(f"[{handler_name}] Step 5: 构造下单参数")
 
     
 
@@ -314,10 +314,10 @@ async def GetOdd(
     oddsSelectionsType = mapping_result['oddsSelectionsType']
     selectionID = mapping_result['selectionID']
 
-    logger.info(f"[{handler_name}] ✅ 成功映射参数: oddsID={oddsID}")
+    # logger.info(f"[{handler_name}] ✅ 成功映射参数: oddsID={oddsID}")
 
     # ========== Step 6: 验证盘口可用性 ==========
-    logger.info(f"[{handler_name}] Step 6: 验证盘口可用性")
+    # logger.info(f"[{handler_name}] Step 6: 验证盘口可用性")
 
     
 
@@ -393,7 +393,7 @@ async def GetOdd(
 
         # 计算执行时间
         duration = time.time() - start_time
-        logger.info(f"[{handler_name}] ✅ GetOdd 完成 (耗时: {duration:.2f}秒)")
+        # logger.info(f"[{handler_name}] ✅ GetOdd 完成 (耗时: {duration:.2f}秒)")
 
         return {
             'success': True,

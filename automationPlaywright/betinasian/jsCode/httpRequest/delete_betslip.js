@@ -40,9 +40,13 @@ async function deleteBetslip(betslipId) {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json, text/plain, */*',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Origin': 'https://black.betinasia.com',
+                'Referer': 'https://black.betinasia.com/sportsbook',
                 'session': sessionId,
                 'x-molly-client-name': 'sonic',
-                'x-molly-client-version': '2.5.8'
+                'x-molly-client-version': '2.5.9'
             },
             credentials: 'include'
         });

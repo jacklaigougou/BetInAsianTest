@@ -57,7 +57,6 @@ class TaskBuilder:
         )
 
         self.tasks[task_id] = task
-        print(f"🧠 构造新订单任务: {order_id} (task_id: {task_id})")
         return task_id
 
     def build_betting_order_task(self, message: dict) -> str:
@@ -84,7 +83,6 @@ class TaskBuilder:
         )
 
         self.tasks[task_id] = task
-        print(f"🧠 构造下注订单任务: {order_id} (task_id: {task_id})")
         return task_id
 
     def build_single_side_success_task(self, message: dict) -> str:
@@ -97,7 +95,6 @@ class TaskBuilder:
             self._execute_single_side_success(task_id, message)
         )
         self.tasks[task_id] = task
-        print(f"🧠 构造补单成功任务: {order_id} (task_id: {task_id})")
         return task_id
     
     
@@ -119,35 +116,16 @@ class TaskBuilder:
             if not handler_name:
                 raise Exception(f"订单 {order_id} 缺少 handler_name")
 
-            print(f"▶️ [{task_id}] 开始执行: {handler_name}")
-
             # 获取 ActionChain
-            print(f"  🔍 [{order_id}] 获取 ActionChain: {handler_name}")
             ac = self.online_platform.get_action_chain(handler_name)
-
-            print(f"  🔍 [{order_id}] ac 对象: {ac}")
-            print(f"  🔍 [{order_id}] ac 类型: {type(ac)}")
 
             if not ac:
                 raise Exception(f"未找到 ActionChain: {handler_name}")
 
-            # 检查 GetOdd 方法是否存在
-            print(f"  🔍 [{order_id}] 检查 GetOdd 方法...")
-            print(f"  🔍 [{order_id}] hasattr(ac, 'GetOdd'): {hasattr(ac, 'GetOdd')}")
-            if hasattr(ac, 'GetOdd'):
-                print(f"  🔍 [{order_id}] GetOdd 类型: {type(ac.GetOdd)}")
-                print(f"  🔍 [{order_id}] GetOdd 是协程: {asyncio.iscoroutinefunction(ac.GetOdd)}")
-
             # 直接调用 GetOdd
-            print(f"  → [{order_id}] {handler_name} 开始获取赔率")
-            print(f"  🔍 [{order_id}] 调用参数: {data}")
-
             try:
-                print(f"  🔍 [{order_id}] 正在调用 ac.GetOdd...")
                 result = await ac.GetOdd(dispatch_message=data)
-                print(f"  🔍 [{order_id}] GetOdd 返回: {result}")
             except Exception as e:
-                print(f"  ❌ [{order_id}] GetOdd 异常: {e}")
                 import traceback
                 traceback.print_exc()
                 result = {
@@ -158,7 +136,6 @@ class TaskBuilder:
                     'timestamp':time.time(),
                     'success':False,
                 }
-            
 
 
             if not result:
@@ -171,13 +148,7 @@ class TaskBuilder:
                     'success':False,
                 }
 
-
-            print(f"  ✅ [{order_id}] GetOdd 执行完成，准备发送结果到 dispatch")
-            print(f"  📤 [{order_id}] 结果数据: success={result.get('success')}")
-
             await self._send_to_dispatch_odd_result(result)
-
-            print(f"  ✅ [{order_id}] 结果已发送到 dispatch")
 
 
         except Exception as e:
@@ -207,20 +178,16 @@ class TaskBuilder:
             if not handler_name:
                 raise Exception(f"订单 {order_id} 缺少 handler_name")
 
-            print(f"▶️ [{task_id}] 开始执行: {handler_name}")
-
             # 获取 ActionChain
             ac = self.online_platform.get_action_chain(handler_name)
             if not ac:
                 raise Exception(f"未找到 ActionChain: {handler_name}")
 
             # 直接调用 BettingOrder
-            print(f"  → [{order_id}] {handler_name} 开始下注")
             result = await ac.BettingOrder(dispatch_message=data)
 
             # 解析新的返回格式
             if isinstance(result, Exception):
-                print(f"  ? [{order_id}] {handler_name} 下注失败: {result}")
                 summary = {
                     "order_id": order_id,
                     "handler_name": handler_name,
@@ -232,7 +199,6 @@ class TaskBuilder:
                 success = result.get('success', False)
 
                 if success:
-                    print(f"  ? [{order_id}] {handler_name} 下注成功")
                     # PIN888 平台
                     if 'wager_id' in result:
                         summary = {
@@ -261,11 +227,8 @@ class TaskBuilder:
                             "success": True
                         }
                 else:
-                    print(f"  ? [{order_id}] {handler_name} 下注失败")
                     # PIN888 平台错误
                     if 'error_code' in result:
-                        print(f"    错误代码: {result.get('error_code')}")
-                        print(f"    错误信息: {result.get('error_message')}")
                         summary = {
                             "order_id": order_id,
                             "handler_name": handler_name,
@@ -276,10 +239,6 @@ class TaskBuilder:
                     # Sportsbet 平台错误
                     elif 'betErrors' in result:
                         bet_errors = result.get('betErrors', [])
-                        if bet_errors:
-                            error = bet_errors[0]
-                            print(f"    错误代码: {error.get('code')}")
-                            print(f"    错误信息: {error.get('message')}")
                         summary = {
                             "order_id": order_id,
                             "handler_name": handler_name,
@@ -296,10 +255,6 @@ class TaskBuilder:
                         }
             else:
                 # 旧的返回格式 (True/False/None)
-                if result:
-                    print(f"  ? [{order_id}] {handler_name} 下注完成")
-                else:
-                    print(f"  ? [{order_id}] {handler_name} 下注失败")
                 summary = {
                     "order_id": order_id,
                     "handler_name": handler_name,
@@ -311,8 +266,6 @@ class TaskBuilder:
 
             # 存储结果
             self.task_results[task_id] = summary
-
-            print(f"? [{task_id}] 完成: {'成功' if summary['success'] else '失败'}")
 
         except Exception as e:
             error_msg = f"执行下注订单失败: {e}"
@@ -336,28 +289,25 @@ class TaskBuilder:
             if not handler_name:
                 raise Exception(f"订单 {order_id} 缺少 handler_name")
 
-            print(f"▶️ [{task_id}] 开始执行: {handler_name}")
-
             # 获取 ActionChain
             ac = self.online_platform.get_action_chain(handler_name)
             if not ac:
                 raise Exception(f"未找到 ActionChain: {handler_name}")
 
             # 直接调用 BettingOrder
-            print(f"  → [{order_id}] {handler_name} 开始补单")
             try:
                 result = await ac.SupplementaryOrder(dispatch_message=data)
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 print(e)
-                
+
             if isinstance(result, Exception):
-                print(f"  ? [{order_id}] {handler_name} 补单失败: {result}")
+                pass
             elif not result:
-                print(f"  ? [{order_id}] {handler_name} 补单失败: {result}")
+                pass
             else:
-                print(f"  ? [{order_id}] {handler_name} 补单完成")
+                pass
 
             # 汇总结果
            
@@ -398,7 +348,6 @@ class TaskBuilder:
         )
 
         self.tasks[task_id] = task
-        print(f"🧮 构造余额查询任务: {handler_name} (task_id: {task_id})")
         return task_id
 
     async def _execute_request_balance(self, task_id: str, message: dict):
@@ -416,8 +365,6 @@ class TaskBuilder:
             if not handler_name:
                 raise Exception(f"缺少 handler_name")
 
-            print(f"▶️ [{task_id}] 开始查询余额: {handler_name}")
-
             # 获取 ActionChain
             ac = self.online_platform.get_action_chain(handler_name)
 
@@ -428,8 +375,6 @@ class TaskBuilder:
             balance = await ac.pom.find_balance_by_request()
 
             if balance:
-                print(f"? [{task_id}] 余额查询成功: {balance}")
-
                 # 发送余额给 dispatch
                 await self.ws_client.send({
                     'type': 'balance_update',
@@ -441,7 +386,6 @@ class TaskBuilder:
                         'balance': balance
                     }
                 })
-                print(f"📤 [{task_id}] 已发送余额到 dispatch")
 
                 # 存储结果
                 self.task_results[task_id] = {
@@ -450,7 +394,6 @@ class TaskBuilder:
                     "balance": balance
                 }
             else:
-                print(f"? [{task_id}] 余额查询失败")
                 self.task_results[task_id] = {
                     "success": False,
                     "handler_name": handler_name,
@@ -494,21 +437,16 @@ class TaskBuilder:
         Args:
             data: 要发送的数据
         """
-        print(f"  📨 [_send_to_dispatch_odd_result] 准备发送消息...")
         message = {
             "type": "odd_result",
             "from": "automation",
             "to": "dispatch",
             "data": data
         }
-        print(f"  📨 [_send_to_dispatch_odd_result] 消息内容: type={message['type']}, data_keys={list(data.keys())}")
-        print(f"  📨 [_send_to_dispatch_odd_result] 调用 ws_client.send()...")
 
         try:
             await self.ws_client.send(message)
-            print(f"  ✅ [_send_to_dispatch_odd_result] 消息发送成功")
         except Exception as e:
-            print(f"  ❌ [_send_to_dispatch_odd_result] 消息发送失败: {e}")
             import traceback
             traceback.print_exc()
             raise
@@ -527,7 +465,6 @@ class TaskBuilder:
             "to": "dispatch",
             "data": data
         }
-        print(f"📨 发送结果给 Dispatch: {message}")
         await self.ws_client.send(message)
 
 

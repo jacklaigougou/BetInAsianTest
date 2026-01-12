@@ -419,7 +419,7 @@ def build_bet_type_from_spider(
 
         >>> # Basketball Over/Under
         >>> build_bet_type_from_spider("basket", "19", 170)
-        "for,ahou,o,680"
+        "for,ahover,680"
 
         >>> # Soccer Asian Handicap with score
         >>> build_bet_type_from_spider("soccer", "17", -0.5, home_score=1, away_score=2)

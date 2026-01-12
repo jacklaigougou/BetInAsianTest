@@ -243,13 +243,13 @@ async def GetOdd(
     spider_period = bet_data.get('spider_period', 'Full Time')  # 默认全场
 
     print(f"\n{'='*60}")
-    print(f"📋 GetOdd 参数:")
+    print(f"📋 获取赔率参数:")
     print(f"  - 主队: {spider_home}")
     print(f"  - 客队: {spider_away}")
     print(f"  - 运动类型: {spider_sport_type}")
-    print(f"  - Market ID: {spider_market_id}")
-    print(f"  - Handicap Value: {spider_handicap_value}")
-    print(f"  - Period: {spider_period}")
+    print(f"  - 盘口ID: {spider_market_id}")
+    print(f"  - 让分值: {spider_handicap_value}")
+    print(f"  - 时段: {spider_period}")
     print(f"{'='*60}\n")
 
     # 2. 将爬虫运动类型转换为 betinasian 运动类型  如: basketball -> basket,soccer -> fb
@@ -298,11 +298,11 @@ async def GetOdd(
     event_key = match_result.get('event_key')
 
     print(f"\n✅ 比赛匹配成功!")
-    print(f"  - Event Key: {event_key}")
+    print(f"  - 比赛键: {event_key}")
     print(f"  - 匹配类型: {match_result.get('match_type')}")
     print(f"  - 匹配分数: {match_result.get('score'):.2f}")
-    print(f"  - BetInAsian 主队: {event.get('home')}")
-    print(f"  - BetInAsian 客队: {event.get('away')}")
+    print(f"  - 平台主队: {event.get('home')}")
+    print(f"  - 平台客队: {event.get('away')}")
     print(f"  - 联赛: {event.get('competition_name')}")
     print(f"  - 是否进行中: {event.get('isInRunning')}")
 
@@ -349,8 +349,8 @@ async def GetOdd(
         return _create_error_response(handler_name, order_id, '缺少必需参数: spider_market_id')
 
     print(f"\n📊 盘口参数:")
-    print(f"  - Spider Market ID: {spider_market_id}")
-    print(f"  - Handicap Value: {spider_handicap_value}")
+    print(f"  - 爬虫盘口ID: {spider_market_id}")
+    print(f"  - 让分值: {spider_handicap_value}")
 
     # 5. 构造 bet_type (使用统一映射接口)
     """
@@ -370,22 +370,22 @@ async def GetOdd(
     )
 
     if not bet_type:
-        print(f"\n❌ 无法映射 market ID:")
-        print(f"  - Spider Market ID: {spider_market_id}")
-        print(f"  - Sport Type: {spider_sport_type}")
-        print(f"  - Handicap Value: {spider_handicap_value}")
+        print(f"\n❌ 无法映射盘口ID:")
+        print(f"  - 爬虫盘口ID: {spider_market_id}")
+        print(f"  - 运动类型: {spider_sport_type}")
+        print(f"  - 让分值: {spider_handicap_value}")
         return _create_error_response(
             handler_name,
             order_id,
             f'无法映射 market ID: {spider_market_id} (sport: {spider_sport_type})'
         )
 
-    print(f"\n✅ Bet Type 构造成功:")
-    print(f"  - Bet Type: {bet_type}")
+    print(f"\n✅ 投注类型构造成功:")
+    print(f"  - 投注类型: {bet_type}")
 
     # 5.5 映射 spider_period 到 BetInAsian sport
     betinasian_sport = spider_sport_type
-
+    print(f"  - 爬虫时段: {spider_period}")
     # 足球时段映射
     if spider_sport_type in ['fb', 'soccer']:
         from ..MappingBetburgerToBetinisian.soccer.period_mapper import map_period_to_sport
@@ -394,9 +394,9 @@ async def GetOdd(
             spider_market_id=spider_market_id
         )
         if betinasian_sport != spider_sport_type:
-            print(f"\n🔄 Period 映射 (足球):")
-            print(f"  - Spider Period: {spider_period}")
-            print(f"  - Spider Market ID: {spider_market_id}")
+            print(f"\n🔄 时段映射 (足球):")
+            print(f"  - 爬虫时段: {spider_period}")
+            print(f"  - 爬虫盘口ID: {spider_market_id}")
             print(f"  - 映射前: {spider_sport_type}")
             print(f"  - 映射后: {betinasian_sport}")
 
@@ -405,19 +405,19 @@ async def GetOdd(
         from ..MappingBetburgerToBetinisian.basket.period_mapper import map_period_to_sport
         betinasian_sport = map_period_to_sport(spider_period=spider_period)
         if betinasian_sport != spider_sport_type:
-            print(f"\n🔄 Period 映射 (篮球):")
-            print(f"  - Spider Period: {spider_period}")
+            print(f"\n🔄 时段映射 (篮球):")
+            print(f"  - 爬虫时段: {spider_period}")
             print(f"  - 映射前: {spider_sport_type}")
             print(f"  - 映射后: {betinasian_sport}")
 
     # 6. 调用 create_betslip, 申请一个 betslip ,并且会触发 ws 中接收 pmm 的数据.
     print(f"\n{'='*60}")
-    print(f"📋 创建 Betslip")
+    print(f"📋 创建投注单")
     print(f"{'='*60}")
-    print(f"  - Sport: {betinasian_sport}")
-    print(f"  - Event ID: {event_id}")
-    print(f"  - Bet Type: {bet_type}")
-    print(f"  - Event: {event.get('home')} vs {event.get('away')}")
+    print(f"  - 运动类型: {betinasian_sport}")
+    print(f"  - 比赛ID: {event_id}")
+    print(f"  - 投注类型: {bet_type}")
+    print(f"  - 比赛: {event.get('home')} vs {event.get('away')}")
     print(f"{'='*60}\n")
 
     betslip_result = await create_betslip(
@@ -429,7 +429,7 @@ async def GetOdd(
 
     # 7. 处理 betslip 创建结果
     if not betslip_result.get('success'):
-        logger.error(f"\n❌ Betslip 创建失败:")
+        logger.error(f"\n❌ 投注单创建失败:")
         logger.error(f"  - 错误: {betslip_result.get('error')}")
         logger.error(f"  - 状态码: {betslip_result.get('status')}")
         logger.error(f"  - 完整响应: {betslip_result}")
@@ -437,7 +437,7 @@ async def GetOdd(
             'success': False,
             'handler_name': handler_name,
             'order_id': order_id,
-            'message': f"Betslip 创建失败: {betslip_result.get('error')}",
+            'message': f"投注单创建失败: {betslip_result.get('error')}",
             'platform_odd': None,
             'platform_max_stake': None,
             'timestamp': time.time(),
@@ -452,7 +452,7 @@ async def GetOdd(
             }
         }
 
-    logger.info(f"\n✅ Betslip 创建成功!")
+    logger.info(f"\n✅ 投注单创建成功!")
     logger.info(f"  - 状态码: {betslip_result.get('status')}")
 
     # 提取 betslip_id (尝试两种可能的路径)
@@ -464,34 +464,34 @@ async def GetOdd(
         betslip_id = betslip_data.get('data', {}).get('betslip_id')
 
     if not betslip_id:
-        print(f"\n❌ 无法从响应中提取 betslip_id")
-        print(f"  - betslip_result keys: {list(betslip_result.keys())}")
-        print(f"  - betslip_data keys: {list(betslip_data.keys())}")
+        print(f"\n❌ 无法从响应中提取投注单ID")
+        print(f"  - 响应键: {list(betslip_result.keys())}")
+        print(f"  - 数据键: {list(betslip_data.keys())}")
         print(f"  - 完整响应: {betslip_result}")
 
         # ⚠️ 无法清理 betslip（因为没有 betslip_id）
-        logger.warning("⚠️ Betslip 已创建但无法提取 ID，无法清理")
+        logger.warning("⚠️ 投注单已创建但无法提取ID，无法清理")
 
         return {
             'success': False,
             'handler_name': handler_name,
             'order_id': order_id,
-            'message': 'Betslip 创建成功但无法提取 betslip_id',
+            'message': '投注单创建成功但无法提取ID',
             'platform_odd': None,
             'platform_max_stake': None,
             'timestamp': time.time(),
             'betslip_result': betslip_result
         }
 
-    print(f"\n✅ Betslip ID 提取成功:")
-    print(f"  - Betslip ID: {betslip_id}")
+    print(f"\n✅ 投注单ID提取成功:")
+    print(f"  - 投注单ID: {betslip_id}")
 
     # 8. 等待 PMM 数据到达并获取最佳赔率
     print(f"\n{'='*60}")
-    print(f"⏳ 等待 PMM 数据准备...")
+    print(f"⏳ 等待赔率数据准备...")
     print(f"{'='*60}")
-    print(f"  - Betslip ID: {betslip_id}")
-    print(f"  - Required Amount: {required_amount} {required_currency}")
+    print(f"  - 投注单ID: {betslip_id}")
+    print(f"  - 所需金额: {required_amount} {required_currency}")
     print(f"{'='*60}\n")
 
     # 使用智能等待机制：等待 PMM 数据稳定且满足执行条件
@@ -508,7 +508,7 @@ async def GetOdd(
 
     # 检查等待结果
     if not wait_result.get('ready'):
-        print(f"\n⚠️ PMM 数据未准备好:")
+        print(f"\n⚠️ 赔率数据未准备好:")
         print(f"  - 原因: {wait_result.get('reason')}")
         print(f"  - 耗时: {wait_result.get('elapsed')}ms")
         print(f"  - 更新次数: {wait_result.get('update_count')}")
@@ -516,21 +516,21 @@ async def GetOdd(
         print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
 
         # 清理 betslip
-        logger.info(f"🗑️ 清理 Betslip: {betslip_id}")
+        logger.info(f"🗑️ 清理投注单: {betslip_id}")
         try:
             delete_result = await delete_betslip(self.page, betslip_id)
             if delete_result.get('success'):
-                logger.info(f"✅ Betslip 已清理")
+                logger.info(f"✅ 投注单已清理")
             else:
-                logger.warning(f"⚠️ Betslip 清理失败: {delete_result.get('error')}")
+                logger.warning(f"⚠️ 投注单清理失败: {delete_result.get('error')}")
         except Exception as e:
-            logger.warning(f"⚠️ Betslip 清理异常: {e}")
+            logger.warning(f"⚠️ 投注单清理异常: {e}")
 
         return {
             'success': False,
             'handler_name': handler_name,
             'order_id': order_id,
-            'message': f"PMM 数据未准备好: {wait_result.get('reason')}",
+            'message': f"赔率数据未准备好: {wait_result.get('reason')}",
             'platform_odd': None,
             'platform_max_stake': None,
             'timestamp': time.time(),
@@ -538,7 +538,7 @@ async def GetOdd(
             'wait_result': wait_result
         }
     else:
-        print(f"\n✅ PMM 数据已准备:")
+        print(f"\n✅ 赔率数据已准备:")
         print(f"  - 耗时: {wait_result.get('elapsed')}ms")
         print(f"  - 更新次数: {wait_result.get('update_count')}")
         print(f"  - 稳定时长: {wait_result.get('stable_duration')}ms")
@@ -548,8 +548,8 @@ async def GetOdd(
 
     # 获取最佳赔率
     logger.info(f"\n🔍 获取最佳赔率...")
-    logger.info(f"  - Betslip ID: {betslip_id}")
-    logger.info(f"  - Required Amount: {required_amount} {required_currency}")
+    logger.info(f"  - 投注单ID: {betslip_id}")
+    logger.info(f"  - 所需金额: {required_amount} {required_currency}")
 
     best_price_result = await get_price_by_betslip_id(
         page=self.page,
@@ -561,10 +561,10 @@ async def GetOdd(
     # 显示最佳赔率结果
     if best_price_result.get('success'):
         logger.info(f"\n✅ 找到可执行赔率:")
-        logger.info(f"  - Bookie: {best_price_result.get('bookie')}")
-        logger.info(f"  - Price: {best_price_result.get('price')}")
-        logger.info(f"  - Available: {best_price_result.get('available')}")
-        logger.info(f"  - Updated At: {best_price_result.get('updated_at')}")
+        logger.info(f"  - 庄家: {best_price_result.get('bookie')}")
+        logger.info(f"  - 价格: {best_price_result.get('price')}")
+        logger.info(f"  - 可用额度: {best_price_result.get('available')}")
+        logger.info(f"  - 更新时间: {best_price_result.get('updated_at')}")
     else:
         logger.warning(f"\n⚠️ 未找到可执行赔率:")
         logger.warning(f"  - 原因: {best_price_result.get('reason')}")
@@ -572,15 +572,15 @@ async def GetOdd(
             logger.warning(f"  - 最高赔率(不可执行): {best_price_result.get('best_odds')}")
 
         # 清理 betslip
-        logger.info(f"🗑️ 清理 Betslip: {betslip_id}")
+        logger.info(f"🗑️ 清理投注单: {betslip_id}")
         try:
             delete_result = await delete_betslip(self.page, betslip_id)
             if delete_result.get('success'):
-                logger.info(f"✅ Betslip 已清理")
+                logger.info(f"✅ 投注单已清理")
             else:
-                logger.warning(f"⚠️ Betslip 清理失败: {delete_result.get('error')}")
+                logger.warning(f"⚠️ 投注单清理失败: {delete_result.get('error')}")
         except Exception as e:
-            logger.warning(f"⚠️ Betslip 清理异常: {e}")
+            logger.warning(f"⚠️ 投注单清理异常: {e}")
 
         return {
             'success': False,

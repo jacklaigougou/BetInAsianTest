@@ -4,6 +4,7 @@ Delete Betslip - 删除 Betslip
 """
 from typing import Dict, Any
 import logging
+from utils.js_loader import get_js_loader
 
 logger = logging.getLogger(__name__)
 
@@ -41,22 +42,34 @@ async def delete_betslip(
     try:
         logger.info(f"删除 Betslip: {betslip_id}")
 
-        # 调用 JS 函数
-        result = await page.evaluate(
-            """
-            (betslipId) => {
-                if (typeof window.deleteBetslip !== 'function') {
-                    return {
-                        success: false,
-                        error: 'deleteBetslip function not available',
-                        status: 0
-                    };
-                }
-                return window.deleteBetslip(betslipId);
+        # Load JS function from JSLoader
+        js_loader = get_js_loader()
+        js_code = js_loader.get_js_content("betinasian", "httpRequest/delete_betslip.js")
+
+        if not js_code:
+            raise FileNotFoundError("delete_betslip.js not found in JSLoader cache")
+
+        # Wrap JS code and call deleteBetslip function
+        wrapped_js = f"""
+async function(betslipId) {{
+{js_code}
+
+    // Call the deleteBetslip function
+    return await deleteBetslip(betslipId);
+}}
+"""
+
+        # Execute request
+        result = await page.evaluate(wrapped_js, betslip_id)
+
+        # Handle None result (when JS returns undefined)
+        if result is None:
+            logger.error(f"❌ deleteBetslip 返回 null/undefined")
+            return {
+                'success': False,
+                'error': 'deleteBetslip returned null/undefined',
+                'status': 0
             }
-            """,
-            betslip_id
-        )
 
         if result.get('success'):
             logger.info(f"✅ Betslip 删除成功: {betslip_id}")
