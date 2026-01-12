@@ -381,14 +381,27 @@ async def get_price_by_betslip_id(
                         continue;
                     }
 
-                    // Check if any tier meets required_amount
-                    const executableTier = data.price_tiers.find(tier =>
+                    // 找到所有 min <= required_amount 的 tier
+                    let executableTiers = data.price_tiers.filter(tier =>
                         tier.min <= params.required_amount
                     );
 
-                    if (executableTier) {
+                    if (executableTiers.length > 0) {
+                        // 排序：优先选择 max 最大的，其次选择赔率最高的
+                        executableTiers.sort((a, b) => {
+                            // 第一优先级：max 最大（降序）
+                            if (b.max !== a.max) {
+                                return b.max - a.max;
+                            }
+                            // 第二优先级：赔率最高（降序）
+                            return b.price - a.price;
+                        });
+
+                        const executableTier = executableTiers[0];
+
                         bookieDebug.filtered_reason = 'passed';
                         bookieDebug.executable_tier = executableTier;
+                        bookieDebug.selected_reason = 'max_amount_priority';  // 标记选择原因
                         debugInfo.filtered_bookies[bookie] = bookieDebug;
 
                         validBookies.push({
