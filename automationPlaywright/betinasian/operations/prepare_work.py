@@ -110,6 +110,17 @@ async def prepare_work(
         except Exception as e:
             logger.warning(f"获取订阅统计失败: {e}")
 
+        # ========== 第6步: 获取账户余额 ==========
+        logger.info("获取账户余额...")
+        try:
+            balance_result = await self.GetBalance()
+            if balance_result.get('success'):
+                logger.warning(f"✓ 余额获取成功: {balance_result.get('balance')} {balance_result.get('currency')}")
+            else:
+                logger.warning(f"⚠ 余额获取失败: {balance_result.get('message')}")
+        except Exception as e:
+            logger.warning(f"获取余额异常: {e}")
+
         # ========== 返回成功 ==========
         return {
             'success': True,

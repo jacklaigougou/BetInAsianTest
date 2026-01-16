@@ -5,12 +5,16 @@
 """
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
+import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AutomationBase(ABC):
     """
     自动化操作抽象基类
-
+    
     标准接口：
     1. prepare_work - 准备工作
     2. GetBalance - 获取余额
@@ -43,6 +47,60 @@ class AutomationBase(ABC):
         # 保存其他参数
         self.other = kwargs
         print(f"[Pin888Automation] init config = {self.config}")
+
+    async def check_and_adjust_balance(
+        self,
+        balance: float,
+        bet_amount: float,
+        decimal_places: int = 1,
+        handler_name: Optional[str] = None
+    ) -> Optional[float]:
+        """
+        检查余额并调整下注金额
+
+        Args:
+            balance: 当前余额
+            bet_amount: 原始下注金额
+            decimal_places: 保留小数位数（默认: 1）
+            handler_name: 处理器名称（可选，默认使用 self.handler_name）
+
+        Returns:
+            调整后的下注金额，或 None (余额无效)
+
+        Examples:
+            >>> # 保留1位小数
+            >>> adjusted = await self.check_and_adjust_balance(100.0, 150.0, decimal_places=1)
+            >>> adjusted
+            100.0
+
+            >>> # 保留2位小数
+            >>> adjusted = await self.check_and_adjust_balance(100.55, 150.0, decimal_places=2)
+            >>> adjusted
+            100.55
+        """
+        _handler_name = handler_name or self.handler_name
+
+        # 1. 验证余额
+        if balance is None or balance < 0:
+            logger.error(f"[{_handler_name}] 余额无效: {balance}")
+            return None
+
+        logger.info(f"[{_handler_name}] 💰 当前余额: {balance:.{decimal_places}f}")
+
+        # 2. 余额不足时自动调整
+        if balance < bet_amount:
+            # 根据指定的小数位数向下取整
+            multiplier = 10 ** decimal_places
+            adjusted_amount = math.floor(balance * multiplier) / multiplier
+
+            logger.warning(
+                f"[{_handler_name}] ⚠️ 余额不足，调整下注金额: "
+                f"{bet_amount:.{decimal_places}f} → {adjusted_amount:.{decimal_places}f} "
+                f"(真实余额: {balance:.{decimal_places}f})"
+            )
+            return adjusted_amount
+
+        return bet_amount
 
     @abstractmethod
     async def prepare_work(self, **kwargs) -> Dict[str, Any]:

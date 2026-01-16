@@ -29,100 +29,126 @@ async def BettingOrder(
     **kwargs
 ) -> Dict[str, Any]:
     """
-    下注订单（简化流程）
+        下注订单（简化流程）
 
-    注意：调用此函数前必须先调用 GetOdd 创建 betslip 并存储到 order_record
+        注意：调用此函数前必须先调用 GetOdd 创建 betslip 并存储到 order_record
 
-    Args:
-        dispatch_message: {
-            'order_id': str,  # 必需，用于从 order_record 获取 betslip_id
-            'stake': float,   # 可选，投注金额（默认: 5）
-            'currency': str,  # 可选，货币（默认: "USD"）
-            'duration': int   # 可选，订单有效期（秒，默认: 10）
-        }
-        stake: 投注金额 (默认: 5.0)
-        currency: 货币 (默认: "USD")
-        duration: 订单有效期（秒，默认: 10）
-        required_amount: PMM 查询所需金额 (默认: 10.0)
-        required_currency: PMM 查询所需货币 (默认: "GBP")
-        wait_for_order: 是否等待订单数据 (默认: True)
-        **kwargs: 额外参数
-            - monitor_order: 是否监控订单状态 (默认: True)
+        Args:
+            dispatch_message: {
+                'order_id': str,  # 必需，用于从 order_record 获取 betslip_id
+                'stake': float,   # 可选，投注金额（默认: 5）
+                'currency': str,  # 可选，货币（默认: "USD"）
+                'duration': int   # 可选，订单有效期（秒，默认: 10）
+            }
+            stake: 投注金额 (默认: 5.0)
+            currency: 货币 (默认: "USD")
+            duration: 订单有效期（秒，默认: 10）
+            required_amount: PMM 查询所需金额 (默认: 10.0)
+            required_currency: PMM 查询所需货币 (默认: "GBP")
+            wait_for_order: 是否等待订单数据 (默认: True)
+            **kwargs: 额外参数
+                - monitor_order: 是否监控订单状态 (默认: True)
 
-    注意：
-        - dispatch_message 中的参数优先级高于函数参数
-        - 例如：dispatch_message={'duration': 10} 会覆盖函数参数 duration=30
+        注意：
+            - dispatch_message 中的参数优先级高于函数参数
+            - 例如：dispatch_message={'duration': 10} 会覆盖函数参数 duration=30
 
-    Returns:
-        {
-            'success': True/False,
-            'order_id': str,
-            'betslip_id': str,
-            'event_id': str,
-            'bet_type': str,
-            'price': float,
-            'bookie': str,
-            'stake': float,
-            'currency': str,
-            'duration': int,
-            'order_status': str,
-            'matched_amount': float,
-            'unmatched_amount': float,
-            'bets': list,
-            'final_order_state': dict,
-            'message': str,
-            'order_result': dict,
-            'order_query_result': dict
-        }
+        Returns:
+            {
+                'success': True/False,
+                'order_id': str,
+                'betslip_id': str,
+                'event_id': str,
+                'bet_type': str,
+                'price': float,
+                'bookie': str,
+                'stake': float,
+                'currency': str,
+                'duration': int,
+                'order_status': str,
+                'matched_amount': float,
+                'unmatched_amount': float,
+                'bets': list,
+                'final_order_state': dict,
+                'message': str,
+                'order_result': dict,
+                'order_query_result': dict
+            }
 
-    Examples:
-        >>> # 先调用 GetOdd
-        >>> odd_result = await self.GetOdd(dispatch_message)
-        >>>
-        >>> # 使用默认参数下注（duration=30秒）
-        >>> result = await BettingOrder(
-        ...     self,
-        ...     dispatch_message={'order_id': '123'}
-        ... )
-        >>>
-        >>> # 通过 dispatch_message 设置 duration=10秒
-        >>> result = await BettingOrder(
-        ...     self,
-        ...     dispatch_message={
-        ...         'order_id': '123',
-        ...         'stake': 10.0,
-        ...         'currency': 'GBP',
-        ...         'duration': 10  # ← 设置为 10 秒
-        ...     }
-        ... )
-        >>>
-        >>> # 通过函数参数设置 duration=10秒
-        >>> result = await BettingOrder(
-        ...     self,
-        ...     dispatch_message={'order_id': '123'},
-        ...     stake=10.0,
-        ...     currency='GBP',
-        ...     duration=10  # ← 设置为 10 秒
-        ... )
+        Examples:
+            >>> # 先调用 GetOdd
+            >>> odd_result = await self.GetOdd(dispatch_message)
+            >>>
+            >>> # 使用默认参数下注（duration=30秒）
+            >>> result = await BettingOrder(
+            ...     self,
+            ...     dispatch_message={'order_id': '123'}
+            ... )
+            >>>
+            >>> # 通过 dispatch_message 设置 duration=10秒
+            >>> result = await BettingOrder(
+            ...     self,
+            ...     dispatch_message={
+            ...         'order_id': '123',
+            ...         'stake': 10.0,
+            ...         'currency': 'GBP',
+            ...         'duration': 10  # ← 设置为 10 秒
+            ...     }
+            ... )
+            >>>
+            >>> # 通过函数参数设置 duration=10秒
+            >>> result = await BettingOrder(
+            ...     self,
+            ...     dispatch_message={'order_id': '123'},
+            ...     stake=10.0,
+            ...     currency='GBP',
+            ...     duration=10  # ← 设置为 10 秒
+            ... )
     """
     betslip_id = None  # 初始化,用于 finally 块清理
     try:
         logger.info("="*60)
         logger.info("🎯 开始下注流程")
         logger.info("="*60)
-
+        
         # ========== Step 1: 从 order_record 获取 betslip_id ==========
         logger.info("\n📋 Step 1: 从 order_record 获取 betslip_id...")
 
         # bet_data = dispatch_message.get('bet_data', {})
         order_id = dispatch_message.get('order_id', '')
+        # betting_amount = dispatch_message.get('betting_amount', 0)
+        
         # print(f'下单的dispatch_message : {dispatch_message}')
 
         # 从 dispatch_message 中获取参数（如果有的话）
         # 优先使用 dispatch_message 中的参数，否则使用函数默认参数
-        stake = dispatch_message.get('stake', stake)
+        stake = dispatch_message.get('betting_amount', stake)
         currency = dispatch_message.get('currency', currency)
         duration = dispatch_message.get('duration', duration)
+
+        # 检查并调整余额
+        balance = self.online_platform.get('balance')
+        if balance is None:
+            logger.error(f"❌ 获取余额失败，无法下注")
+            return {
+                'success': False,
+                'message': '获取余额失败',
+                'order_id': order_id
+            }
+
+        adjusted_stake = await self.check_and_adjust_balance(
+            balance=float(balance),
+            bet_amount=stake,
+            decimal_places=1
+        )
+        if adjusted_stake is None:
+            logger.error(f"❌ 余额无效，无法下注")
+            return {
+                'success': False,
+                'message': '余额无效',
+                'order_id': order_id
+            }
+        stake = adjusted_stake
 
         logger.info(f"📝 下单参数:")
         logger.info(f"  - Stake: {stake} {currency}")

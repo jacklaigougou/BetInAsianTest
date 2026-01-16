@@ -52,7 +52,7 @@ class BetInAsianAutomation(AutomationBase):
         #     except Exception as exc:  # noqa: BLE001
         #         logger.warning("[%s] POM init failed: %s", self.handler_name, exc)
 
-        logger.info("[%s] BetInAsian automation initialized", self.handler_name)
+        # logger.info("[%s] BetInAsian automation initialized", self.handler_name)
 
     prepare_work = prepare_work
     GetBalance = GetBalance

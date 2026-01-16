@@ -16,7 +16,8 @@
         '__offersHandler',
         '__apiHandler',
         '__messageRouter',
-        '__queryEngine'
+        '__queryEngine',
+        '__balanceStore'
     ];
 
     for (const dep of dependencies) {
@@ -172,7 +173,10 @@
         getWatchedEvents: () => window.__watchManager.getWatchedEvents(),
 
         // ===== 统计信息 =====
-        stats: () => window.__queryEngine.getStats()
+        stats: () => window.__queryEngine.getStats(),
+
+        // ===== 余额查询 =====
+        balance: () => window.__balanceStore.get()
     };
 
     // ========== 全局 API: 直接访问原始数据 ==========

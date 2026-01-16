@@ -110,6 +110,9 @@ async def inject_websocket_hook(
             ('wsDataRegistor/core/offers/offers_hcap_manager.js', 'Offers Hcap Manager'),
             ('wsDataRegistor/core/offers/offers_event_manager.js', 'Offers Event Manager'),
 
+            # Balance 模块
+            ('wsDataRegistor/core/balance/balance_store.js', 'Balance Store'),
+
             # Managers 模块
             ('wsDataRegistor/core/managers/watch_manager.js', 'Watch Manager'),
             ('wsDataRegistor/core/managers/subscription_manager.js', 'Subscription Manager'),
@@ -171,6 +174,7 @@ async def inject_websocket_hook(
             'Events Manager': 'window.__eventsManager',
             'Offers Hcap Manager': 'window.__offersHcapManager',
             'Offers Event Manager': 'window.__offersEventManager',
+            'Balance Store': 'window.__balanceStore',
             'Watch Manager': 'window.__watchManager',
             'Subscription Manager': 'window.__subscriptionManager',
             'PMM Store': 'window.pmmStore',

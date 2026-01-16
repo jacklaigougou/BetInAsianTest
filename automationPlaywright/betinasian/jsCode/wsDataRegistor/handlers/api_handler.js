@@ -44,6 +44,10 @@ class ApiHandler {
                         window.__betHandler.processBet(messageData);
                         betCount++;
                     }
+                    // 分发 balance 消息
+                    else if (messageType === 'balance' && window.__balanceStore) {
+                        window.__balanceStore.update(messageData, data.ts * 1000);
+                    }
                 }
 
                 if (orderCount > 0 || betCount > 0) {
