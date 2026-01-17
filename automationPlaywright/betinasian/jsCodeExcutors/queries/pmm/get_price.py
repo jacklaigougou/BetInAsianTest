@@ -85,7 +85,7 @@ async def get_best_price(
             logger.info(f"  - Bookie: {result.get('bookie')}")
             logger.info(f"  - Price: {result.get('price')}")
             logger.info(f"  - Available: {result.get('available')}")
-            logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
+            # logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
         else:
             logger.warning(f"⚠️ No executable price: {result.get('reason')}")
             if result.get('best_odds'):
@@ -458,32 +458,32 @@ async def get_price_by_betslip_id(
 
         # Log result
         if result.get('success'):
-            logger.info(f"✅ Best price found:")
-            logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
-            logger.info(f"  - Event ID: {result.get('event_id')}")
-            logger.info(f"  - Bet Type: {result.get('bet_type')}")
-            logger.info(f"  - Bookie: {result.get('bookie')}")
-            logger.info(f"  - Price: {result.get('price')}")
-            logger.info(f"  - Available: {result.get('available')}")
-            logger.info(f"  - Total bookies: {result.get('all_bookies')}")
+            logger.info(f"✅ 找到最佳赔率:")
+            # logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
+            # logger.info(f"  - Event ID: {result.get('event_id')}")
+            # logger.info(f"  - Bet Type: {result.get('bet_type')}")
+            logger.info(f"  - 市场: {result.get('bookie')}")
+            logger.info(f"  - 价格: {result.get('price')}")
+            # logger.info(f"  - Available: {result.get('available')}")
+            # logger.info(f"  - Total bookies: {result.get('all_bookies')}")
         else:
-            logger.warning(f"⚠️ No executable price: {result.get('reason')}")
-            logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
+            logger.warning(f"⚠️ 未找到最佳赔率: {result.get('reason')}")
+            # logger.info(f"  - Betslip ID: {result.get('betslip_id')}")
 
             # 输出详细的调试信息
             debug_info = result.get('debug_info')
             if debug_info:
-                logger.info(f"\n🔍 调试信息:")
-                logger.info(f"  - 总 Bookie 数: {debug_info.get('total_bookies')}")
-                logger.info(f"\n  各 Bookie 过滤原因:")
+                # logger.info(f"\n🔍 调试信息:")
+                # logger.info(f"  - 总 Bookie 数: {debug_info.get('total_bookies')}")
+                # logger.info(f"\n  各 Bookie 过滤原因:")
                 for bookie, info in debug_info.get('filtered_bookies', {}).items():
                     logger.info(f"\n    [{bookie}]")
                     logger.info(f"      - 过滤原因: {info.get('filtered_reason')}")
-                    logger.info(f"      - 状态码: {info.get('status_code')}")
-                    logger.info(f"      - 货币: {info.get('currency')}")
-                    logger.info(f"      - 最高价格: {info.get('top_price')}")
-                    logger.info(f"      - 价格层级数: {info.get('price_tiers_count')}")
-                    logger.info(f"      - 数据年龄: {info.get('age_ms')}ms")
+                    # logger.info(f"      - 状态码: {info.get('status_code')}")
+                    # logger.info(f"      - 货币: {info.get('currency')}")
+                    # logger.info(f"      - 最高价格: {info.get('top_price')}")
+                    # logger.info(f"      - 价格层级数: {info.get('price_tiers_count')}")
+                    # logger.info(f"      - 数据年龄: {info.get('age_ms')}ms")
                     if info.get('filtered_reason') == 'no_executable_tier':
                         logger.info(f"      - 价格层级: {info.get('price_tiers')}")
 

@@ -117,17 +117,17 @@ async def wait_for_pmm_ready(
         # Log result
         if result.get('ready'):
             logger.info(f"✅ PMM data ready:")
-            logger.info(f"  - Elapsed: {result.get('elapsed')}ms")
-            logger.info(f"  - Updates: {result.get('update_count')}")
-            logger.info(f"  - Stable duration: {result.get('stable_duration')}ms")
-            logger.info(f"  - Best price: {result.get('best_price')}")
-            logger.info(f"  - Best bookie: {result.get('best_bookie')}")
-            logger.info(f"  - Best amount: {result.get('best_amount')}")
+            # logger.info(f"  - Elapsed: {result.get('elapsed')}ms")
+            # logger.info(f"  - Updates: {result.get('update_count')}")
+            # logger.info(f"  - Stable duration: {result.get('stable_duration')}ms")
+            # logger.info(f"  - Best price: {result.get('best_price')}")
+            # logger.info(f"  - Best bookie: {result.get('best_bookie')}")
+            # logger.info(f"  - Best amount: {result.get('best_amount')}")
         else:
             logger.warning(f"⚠️ PMM data not ready:")
-            logger.warning(f"  - Reason: {result.get('reason')}")
-            logger.warning(f"  - Elapsed: {result.get('elapsed')}ms")
-            logger.warning(f"  - Updates: {result.get('update_count')}")
+            # logger.warning(f"  - Reason: {result.get('reason')}")
+            # logger.warning(f"  - Elapsed: {result.get('elapsed')}ms")
+            # logger.warning(f"  - Updates: {result.get('update_count')}")
 
         return result
 

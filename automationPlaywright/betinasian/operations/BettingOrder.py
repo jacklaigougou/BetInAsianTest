@@ -13,6 +13,8 @@ BetInAsian 下注订单
 from typing import Dict, Any
 import logging
 import asyncio
+from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id
+from ..jsCodeExcutors.http_executors import place_order, delete_betslip
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +129,8 @@ async def BettingOrder(
         duration = dispatch_message.get('duration', duration)
 
         # 检查并调整余额
-        balance = self.online_platform.get('balance')
+        balance_result = await self.GetBalance()
+        balance = balance_result.get('balance')
         if balance is None:
             logger.error(f"❌ 获取余额失败，无法下注")
             return {
@@ -176,20 +179,12 @@ async def BettingOrder(
                 'order_id': order_id
             }
 
-        logger.info(f"✅ 从 order_record 获取数据成功:")
-        logger.info(f"  - Order ID: {order_id}")
-        logger.info(f"  - Handler: {cached_data.get('handler_name')}")
-        logger.info(f"  - Betslip ID: {betslip_id}")
-        logger.info(f"  - Event: {cached_data.get('home')} vs {cached_data.get('away')}")
-        logger.info(f"  - Event ID: {event_id}")
-        logger.info(f"  - Bet Type: {bet_type}")
+        
 
         # ========== Step 2: 实时查询最新价格 ==========
         logger.info("\n💰 Step 2: 实时查询最新价格...")
-        logger.info(f"  - Betslip ID: {betslip_id}")
-        logger.info(f"  - Required Amount: {required_amount} {required_currency}")
-
-        from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id
+       
+        
 
         best_price_result = await get_price_by_betslip_id(
             page=self.page,
@@ -228,13 +223,11 @@ async def BettingOrder(
 
         # ========== Step 3: 提交订单 ==========
         logger.info("\n📤 Step 3: 提交订单...")
-        logger.info(f"  - Betslip ID: {betslip_id}")
         logger.info(f"  - Price: {best_price} (来自 {best_bookie})")
         logger.info(f"  - Stake: {stake} {currency}")
         logger.info(f"  - Duration: {duration} seconds")
 
-        from ..jsCodeExcutors.http_executors import place_order, delete_betslip
-
+        
         order_result = await place_order(
             page=self.page,
             betslip_id=betslip_id,
@@ -266,13 +259,17 @@ async def BettingOrder(
                 'bookie': best_bookie,
                 'stake': stake,
                 'currency': currency,
-                'order_result': order_result
+                'order_result': order_result,
+                'betErrors':'order 挂载失败',
+                'status':'failed'
             }
 
-        # 提取 order_id
+        # 提取 order_id（从 place_order 响应中）
+        # 响应格式: {"data": {"data": {"order_id": 1054169958, ...}, "status": "ok"}}
         placed_order_id = order_result.get('data', {}).get('data', {}).get('order_id')
         if not placed_order_id:
             logger.error("❌ 无法从响应中提取 order_id")
+            logger.error(f"   响应数据: {order_result}")
             return {
                 'success': False,
                 'message': '下单成功但无法提取 order_id',
@@ -281,7 +278,9 @@ async def BettingOrder(
                 'bookie': best_bookie,
                 'stake': stake,
                 'currency': currency,
-                'order_result': order_result
+                'order_result': order_result,
+                'betErrors':'order 挂载失败',
+                'status':'failed'
             }
 
         order_id_str = str(placed_order_id)
@@ -289,12 +288,35 @@ async def BettingOrder(
         logger.info(f"  - Order ID: {order_id_str}")
         logger.info(f"  - Status: {order_result.get('status')}")
 
-        # ========== Step 4: 等待订单数据（可选） ==========
-        if wait_for_order:
-            logger.info(f"\n⏳ Step 4: 等待订单数据...")
-            await asyncio.sleep(2)  # 等待 WebSocket 接收订单状态
-            logger.info("✅ 等待完成")
+        # 🆕 将 placed_order_id 存储到 order_record 中
+        self.order_record[order_id]['placed_order_id'] = placed_order_id
+        logger.info(f"💾 已将 placed_order_id 存储到 order_record[{order_id}]")
 
+        # ========== 立即返回订单创建成功的结果 ==========
+        logger.info("📡 订单创建成功，立即返回结果，后台将继续监控...")
+
+        return {
+            'success': True,
+            'order_id': order_id_str,
+            'placed_order_id': placed_order_id,  # 🆕 添加原始 order_id（整数）
+            'betslip_id': betslip_id,
+            'event_id': event_id,
+            'bet_type': bet_type,
+            'price': best_price,
+            'bookie': best_bookie,
+            'stake': stake,
+            'currency': currency,
+            'duration': duration,
+            'message': '订单创建成功',
+            'order_result': order_result,
+            'betErrors': '',
+            'status': 'order_created',
+            'betting_amount': stake,
+            'betting_odd': best_price,
+            'needs_monitoring': True,  # 标识：需要后台监控
+        }
+
+        # ========== 以下代码将被移到 MonitorOrderStatus 函数 ==========
         # ========== Step 5: 查询订单结果 ==========
         logger.info(f"\n🔍 Step 5: 查询订单结果...")
 
@@ -647,7 +669,15 @@ async def BettingOrder(
             'final_order_state': final_order_state,  # 最终订单状态
             'message': message,
             'order_result': order_result,
-            'order_query_result': order_query_result
+            'order_query_result': order_query_result,
+
+            'betErrors':'',
+            'status':'',
+            'betting_amount':stake,
+            'betting_odd': best_price,
+
+            # 🆕 添加立即响应结果（用于第一次 WS 信号）
+            'immediate_result': immediate_result,
         }
 
     except Exception as e:
@@ -669,3 +699,136 @@ async def BettingOrder(
                     logger.warning(f"⚠️ Betslip 清理失败: {delete_result.get('error')}")
             except Exception as e:
                 logger.warning(f"⚠️ Betslip 清理异常: {e}")
+
+
+async def MonitorOrderStatus(
+    self,
+    order_id: str,
+    betslip_id: str,
+    event_id: str,
+    bet_type: str,
+    price: float,
+    bookie: str,
+    stake: float,
+    currency: str,
+    duration: int,
+    **kwargs
+) -> Dict[str, Any]:
+    """
+    监控订单状态（后台异步执行）
+    
+    这个函数会在后台运行，不阻塞主流程
+    
+    Args:
+        order_id: 订单ID
+        betslip_id: Betslip ID
+        event_id: 赛事ID
+        bet_type: 投注类型
+        price: 价格
+        bookie: 庄家
+        stake: 投注金额
+        currency: 货币
+        duration: 订单有效期
+        **kwargs: 额外参数
+    
+    Returns:
+        订单最终状态
+    """
+    try:
+        logger.info(f"\n🔄 [后台监控] 开始监控订单: {order_id}")
+        
+        # ========== Step 5: 查询订单结果 ==========
+        from ..jsCodeExcutors.queries.orders.get_order import (
+            get_order_by_id,
+            get_order_with_bets,
+            check_order_slippage
+        )
+        
+        order_query_result = await get_order_by_id(
+            page=self.page,
+            order_id=order_id
+        )
+        
+        # 处理查询结果
+        if order_query_result.get('success'):
+            order_status = order_query_result.get('status')
+            matched_amount = order_query_result.get('matched_amount', 0)
+            unmatched_amount = order_query_result.get('unmatched_amount', 0)
+            bets = order_query_result.get('bets', [])
+            logger.info(f"✅ [后台监控] 订单查询成功: {order_status}")
+        else:
+            logger.warning(f"⚠️ [后台监控] 订单查询失败")
+            order_status = 'unknown'
+            matched_amount = 0
+            unmatched_amount = 0
+            bets = []
+        
+        # ========== Step 6: 监控订单状态 ==========
+        monitor_order = kwargs.get('monitor_order', True)
+        final_order_state = None
+        
+        if monitor_order:
+            logger.info(f"📡 [后台监控] 开始轮询订单状态...")
+            timeout = duration + 5
+            import time
+            start_time = time.time()
+            found_order = False
+            
+            try:
+                while time.time() - start_time < timeout:
+                    elapsed = int(time.time() - start_time)
+                    order = await get_order_by_id(self.page, order_id)
+                    
+                    if order and order.get('success'):
+                        found_order = True
+                        state = order.get('state')
+                        
+                        if state in ['FINISHED', 'EXPIRED_LOCAL']:
+                            logger.info(f"✅ [后台监控] 订单已结束: {state}")
+                            final_order_state = order
+                            break
+                    
+                    await asyncio.sleep(1)
+            except Exception as e:
+                logger.error(f"❌ [后台监控] 监控异常: {e}")
+        
+        # ========== 判定最终成功状态 ==========
+        success = False
+        message = '下注失败'
+        
+        if monitor_order and final_order_state:
+            state = final_order_state.get('state')
+            bet_bar = final_order_state.get('bet_bar', {})
+            success_count = bet_bar.get('success', 0)
+            
+            if state == 'FINISHED' and success_count > 0:
+                success = True
+                message = f'下注成功 (成功: {success_count})'
+                logger.info(f"✅ [后台监控] {message}")
+            else:
+                success = False
+                message = f'订单完成但无成功投注'
+                logger.warning(f"⚠️ [后台监控] {message}")
+        elif not monitor_order and matched_amount > 0:
+            success = True
+            message = f'下注成功 (成交金额: {matched_amount})'
+        
+        # 返回监控结果
+        return {
+            'success': success,
+            'order_id': order_id,
+            'order_status': order_status,
+            'matched_amount': matched_amount,
+            'unmatched_amount': unmatched_amount,
+            'bets': bets,
+            'final_order_state': final_order_state,
+            'message': message
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ [后台监控] 异常: {e}", exc_info=True)
+        return {
+            'success': False,
+            'order_id': order_id,
+            'message': f'监控异常: {str(e)}'
+        }

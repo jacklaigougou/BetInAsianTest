@@ -25,9 +25,12 @@ async def handle_dispatch_message(app, message: Dict[str, Any]) -> None:
             app.task_builder.build_single_side_success_task(message)
         case 'onlineAccount':
             # print('收到 dispatch --> onlineAccount: ',message)
-            await app.online_platform.update_accounts(message)
+            await _filter_and_update_accounts(app, message)
         case 'single_side_failure':
             app.task_builder.build_single_side_failure_task(message)
+        case 'cancel_order':
+            print(f'收到 dispatch --> cancel_order: {message}')
+            app.task_builder.build_cancel_order_task(message)
         case _:
             print(f"⚠️ 未知的 dispatch 消息类型: {msg_type}")
 
@@ -47,3 +50,42 @@ def _handle_stop_cycle(app, message: Dict[str, Any]) -> None:
 
     account['PIN888_CYCLEING'] = False
     print(f"? [{handler_name}] 已设置 PIN888_CYCLEING = False, 补单循环将在下次迭代时退出")
+
+
+async def _filter_and_update_accounts(app, message: Dict[str, Any]) -> None:
+    """
+    过滤并更新账号列表（跳过已废弃的平台）
+
+    Args:
+        app: Application 实例
+        message: onlineAccount 消息
+    """
+    data = message.get('data', [])
+
+    if not isinstance(data, list):
+        print("⚠️ onlineAccount 消息的 data 不是列表")
+        await app.online_platform.update_accounts(message)
+        return
+
+    # 过滤掉 sportsbet 平台（已废弃）
+    filtered_data = [
+        account for account in data
+        if account.get('platform_name') != 'sportsbet'
+    ]
+
+    # 统计过滤结果
+    original_count = len(data)
+    filtered_count = len(filtered_data)
+    skipped_count = original_count - filtered_count
+
+    if skipped_count > 0:
+        print(f"⏭️ 已跳过 {skipped_count} 个 sportsbet 账号（平台已废弃）")
+
+    # 更新消息数据
+    filtered_message = {
+        **message,
+        'data': filtered_data
+    }
+
+    # 调用原有的更新逻辑
+    await app.online_platform.update_accounts(filtered_message)

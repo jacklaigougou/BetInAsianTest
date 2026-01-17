@@ -42,7 +42,7 @@ async def query_betinasian_events(
     """
     try:
         # 🔍 调试：先检查 window.queryData 是否存在
-        logger.info(f"🔍 检查 window.queryData 是否存在...")
+        # logger.info(f"🔍 检查 window.queryData 是否存在...")
         check_result = await page.evaluate('''
             () => {
                 return {
@@ -52,9 +52,9 @@ async def query_betinasian_events(
                 };
             }
         ''')
-        logger.info(f"  - queryData 存在: {check_result.get('queryData_exists')}")
-        logger.info(f"  - inRunningSport 存在: {check_result.get('inRunningSport_exists')}")
-        logger.info(f"  - bySport 存在: {check_result.get('bySport_exists')}")
+        # logger.info(f"  - queryData 存在: {check_result.get('queryData_exists')}")
+        # logger.info(f"  - inRunningSport 存在: {check_result.get('inRunningSport_exists')}")
+        # logger.info(f"  - bySport 存在: {check_result.get('bySport_exists')}")
 
         if not check_result.get('queryData_exists'):
             logger.error("❌ window.queryData 不存在！WebSocket Hook 可能未正确注入")
@@ -73,7 +73,7 @@ async def query_betinasian_events(
             # 查询所有比赛 (需要指定 period,这里默认使用 ht)
             js_code = f'window.queryData.bySport("{sport_type}_ht")'
 
-        logger.info(f"查询 betinasian 比赛: {js_code}")
+        # logger.info(f"查询 betinasian 比赛: {js_code}")
 
         # 执行查询（使用 asyncio.wait_for 添加超时保护）
         import asyncio
@@ -90,7 +90,7 @@ async def query_betinasian_events(
             logger.warning(f"未找到 {sport_type} 比赛数据")
             return []
 
-        logger.info(f"查询到 {len(events)} 场比赛")
+        # logger.info(f"查询到 {len(events)} 场比赛")
         return events
 
     except Exception as e:
@@ -221,15 +221,15 @@ async def query_active_markets(
         logger.info(f"查询盘口: {event_key}")
 
         # 先查看 Offers Store 中的所有数据
-        logger.info(f"\n{'='*60}")
-        logger.info(f"📊 Offers Store 诊断信息:")
-        logger.info(f"{'='*60}")
+        # logger.info(f"\n{'='*60}")
+        # logger.info(f"📊 Offers Store 诊断信息:")
+        # logger.info(f"{'='*60}")
 
         # 获取 Offers Store 总数
         total_offers_hcap = await page.evaluate('window.__offersHcapStore.count()')
         total_offers_event = await page.evaluate('window.__offersEventStore.count()')
-        logger.info(f"Offers Hcap Store 总事件数: {total_offers_hcap}")
-        logger.info(f"Offers Event Store 总事件数: {total_offers_event}")
+        # logger.info(f"Offers Hcap Store 总事件数: {total_offers_hcap}")
+        # logger.info(f"Offers Event Store 总事件数: {total_offers_event}")
 
         # 获取前10个 offers 的样本 (hcap)
         if total_offers_hcap > 0:
@@ -281,9 +281,9 @@ async def query_active_markets(
                 'event_key': event_key
             })
 
-        logger.info(f"  - 找到 {len(offers_list)} 种 offer 类型: {list(offers.keys())}")
-        logger.info(f"{'='*60}\n")
-        logger.info(f"返回 {len(offers_list)} 个 offers")
+        # logger.info(f"  - 找到 {len(offers_list)} 种 offer 类型: {list(offers.keys())}")
+        # logger.info(f"{'='*60}\n")
+        # logger.info(f"返回 {len(offers_list)} 个 offers")
 
         return offers_list
 

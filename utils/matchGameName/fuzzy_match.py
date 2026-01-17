@@ -88,9 +88,9 @@ def fuzzy_match_teams(
     normalized_spider_home = normalize_name(spider_home)
     normalized_spider_away = normalize_name(spider_away)
 
-    logger.info(f"开始匹配: {spider_home} vs {spider_away}")
-    logger.info(f"标准化后: {normalized_spider_home} vs {normalized_spider_away}")
-    logger.info(f"使用算法: {'FuzzyWuzzy partial_ratio' if USE_FUZZYWUZZY else 'difflib.SequenceMatcher'}")
+    # logger.info(f"开始匹配: {spider_home} vs {spider_away}")
+    # logger.info(f"标准化后: {normalized_spider_home} vs {normalized_spider_away}")
+    # logger.info(f"使用算法: {'FuzzyWuzzy partial_ratio' if USE_FUZZYWUZZY else 'difflib.SequenceMatcher'}")
 
     # 第一轮: 精确匹配 (OR 逻辑 - 主队或客队任一匹配即可)
     for event in events:
@@ -109,7 +109,7 @@ def fuzzy_match_teams(
             }
 
     # 第二轮: 相似度匹配
-    logger.info("精确匹配失败,开始相似度匹配...")
+    # logger.info("精确匹配失败,开始相似度匹配...")
     best_score = 0
     best_match = None
     best_home_score = 0
@@ -149,8 +149,8 @@ def fuzzy_match_teams(
             'matched_event': best_match
         }
     else:
-        logger.warning(f"❌ 模糊匹配失败: 最高分数={best_score:.3f} < 阈值={threshold}")
-        if best_match:
-            logger.warning(f"   最接近的比赛: {best_match.get('home')} vs {best_match.get('away')}")
-            logger.warning(f"   分数详情: home={best_home_score:.3f}, away={best_away_score:.3f}")
+        # logger.warning(f"❌ 模糊匹配失败: 最高分数={best_score:.3f} < 阈值={threshold}")
+        # if best_match:
+        #     logger.warning(f"   最接近的比赛: {best_match.get('home')} vs {best_match.get('away')}")
+        #     logger.warning(f"   分数详情: home={best_home_score:.3f}, away={best_away_score:.3f}")
         return None

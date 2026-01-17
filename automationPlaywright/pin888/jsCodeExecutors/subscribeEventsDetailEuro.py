@@ -3,6 +3,7 @@ PIN888 平台 - EVENTS_DETAIL_EURO 订阅相关的 JS 代码执行器
 """
 
 import asyncio
+import json
 from utils import get_js_loader
 import time
 
@@ -69,9 +70,14 @@ async def subscribe_events_detail_euro(page, event_id):
             print(f"❌ [PIN888] 加载 Subscribe_events_detail_euro.js 失败")
             return False
 
-        # 5. 替换占位符
+        # 5. 验证并替换 event_id 占位符
+        if event_id is None or event_id == '':
+            print(f"❌ [PIN888] event_id 无效: {event_id}")
+            return False
 
-        js_code = js_code.replace('__EVENT_ID__', str(event_id))
+        # 使用 json.dumps 确保生成有效的 JavaScript 字面量
+        # None → null, 123 → 123, "abc" → "abc"
+        js_code = js_code.replace('__EVENT_ID__', json.dumps(event_id))
 
         # 6. 包装并执行
         wrapped_code = f"(() => {{ {js_code} }})()"

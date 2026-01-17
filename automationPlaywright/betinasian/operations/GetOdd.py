@@ -78,10 +78,10 @@ async def get_event_key_by_team_name(
         >>> result['success']
         True
     """
-    logger.info(f"开始匹配比赛: {spider_home} vs {spider_away} ({spider_sport_type})")
+    # logger.info(f"开始匹配比赛: {spider_home} vs {spider_away} ({spider_sport_type})")
 
     # 1. 查询 betinasian 比赛列表
-    logger.info(f"📡 查询 BetInAsian 比赛列表...")
+    # logger.info(f"📡 查询 BetInAsian 比赛列表...")
     events = await query_betinasian_events(
         page=self.page,
         sport_type=spider_sport_type,
@@ -98,16 +98,16 @@ async def get_event_key_by_team_name(
     logger.info(f"✅ 从 BetInAsian 获取到 {len(events)} 场比赛")
 
     # 显示前5场比赛
-    if len(events) > 0:
-        logger.info(f"\n前 {min(5, len(events))} 场比赛:")
-        for i, evt in enumerate(events[:5], 1):
-            logger.info(f"  [{i}] {evt.get('home')} vs {evt.get('away')} ({evt.get('competition_name')})")
+    # if len(events) > 0:
+    #     logger.info(f"\n前 {min(5, len(events))} 场比赛:")
+    #     for i, evt in enumerate(events[:5], 1):
+    #         logger.info(f"  [{i}] {evt.get('home')} vs {evt.get('away')} ({evt.get('competition_name')})")
 
     # 2. 队名匹配 (先精确匹配,失败后模糊匹配)
-    logger.info(f"\n🔍 开始队名匹配...")
-    logger.info(f"  - 目标主队: {spider_home}")
-    logger.info(f"  - 目标客队: {spider_away}")
-    logger.info(f"  - 匹配阈值: 0.8")
+    # logger.info(f"\n🔍 开始队名匹配...")
+    # logger.info(f"  - 目标主队: {spider_home}")
+    # logger.info(f"  - 目标客队: {spider_away}")
+    # logger.info(f"  - 匹配阈值: 0.8")
 
     match_result = fuzzy_match_teams(
         spider_home=spider_home,
@@ -453,7 +453,7 @@ async def GetOdd(
         }
 
     logger.info(f"\n✅ 投注单创建成功!")
-    logger.info(f"  - 状态码: {betslip_result.get('status')}")
+    # logger.info(f"  - 状态码: {betslip_result.get('status')}")
 
     # 提取 betslip_id (尝试两种可能的路径)
     betslip_data = betslip_result.get('data', {})
@@ -483,16 +483,16 @@ async def GetOdd(
             'betslip_result': betslip_result
         }
 
-    print(f"\n✅ 投注单ID提取成功:")
-    print(f"  - 投注单ID: {betslip_id}")
+    print(f"\n✅ 投注单ID提取成功:投注单ID: {betslip_id}")
+   
 
     # 8. 等待 PMM 数据到达并获取最佳赔率
-    print(f"\n{'='*60}")
-    print(f"⏳ 等待赔率数据准备...")
-    print(f"{'='*60}")
-    print(f"  - 投注单ID: {betslip_id}")
-    print(f"  - 所需金额: {required_amount} {required_currency}")
-    print(f"{'='*60}\n")
+    # print(f"\n{'='*60}")
+    # print(f"⏳ 等待赔率数据准备...")
+    # print(f"{'='*60}")
+    # print(f"  - 投注单ID: {betslip_id}")
+    # print(f"  - 所需金额: {required_amount} {required_currency}")
+    # print(f"{'='*60}\n")
 
     # 使用智能等待机制：等待 PMM 数据稳定且满足执行条件
     wait_result = await wait_for_pmm_ready(
@@ -509,14 +509,14 @@ async def GetOdd(
     # 检查等待结果
     if not wait_result.get('ready'):
         print(f"\n⚠️ 赔率数据未准备好:")
-        print(f"  - 原因: {wait_result.get('reason')}")
-        print(f"  - 耗时: {wait_result.get('elapsed')}ms")
-        print(f"  - 更新次数: {wait_result.get('update_count')}")
-        print(f"  - 最佳价格: {wait_result.get('best_price')}")
-        print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
+        # print(f"  - 原因: {wait_result.get('reason')}")
+        # print(f"  - 耗时: {wait_result.get('elapsed')}ms")
+        # print(f"  - 更新次数: {wait_result.get('update_count')}")
+        # print(f"  - 最佳价格: {wait_result.get('best_price')}")
+        # print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
 
         # 清理 betslip
-        logger.info(f"🗑️ 清理投注单: {betslip_id}")
+        # logger.info(f"🗑️ 清理投注单: {betslip_id}")
         try:
             delete_result = await delete_betslip(self.page, betslip_id)
             if delete_result.get('success'):
@@ -539,12 +539,12 @@ async def GetOdd(
         }
     else:
         print(f"\n✅ 赔率数据已准备:")
-        print(f"  - 耗时: {wait_result.get('elapsed')}ms")
-        print(f"  - 更新次数: {wait_result.get('update_count')}")
-        print(f"  - 稳定时长: {wait_result.get('stable_duration')}ms")
-        print(f"  - 最佳价格: {wait_result.get('best_price')}")
-        print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
-        print(f"  - 可用金额: {wait_result.get('best_amount')}")
+        # print(f"  - 耗时: {wait_result.get('elapsed')}ms")
+        # print(f"  - 更新次数: {wait_result.get('update_count')}")
+        # print(f"  - 稳定时长: {wait_result.get('stable_duration')}ms")
+        # print(f"  - 最佳价格: {wait_result.get('best_price')}")
+        # print(f"  - 最佳庄家: {wait_result.get('best_bookie')}")
+        # print(f"  - 可用金额: {wait_result.get('best_amount')}")
 
     # 获取最佳赔率
     logger.info(f"\n🔍 获取最佳赔率...")
@@ -563,8 +563,8 @@ async def GetOdd(
         logger.info(f"\n✅ 找到可执行赔率:")
         logger.info(f"  - 庄家: {best_price_result.get('bookie')}")
         logger.info(f"  - 价格: {best_price_result.get('price')}")
-        logger.info(f"  - 可用额度: {best_price_result.get('available')}")
-        logger.info(f"  - 更新时间: {best_price_result.get('updated_at')}")
+        # logger.info(f"  - 可用额度: {best_price_result.get('available')}")
+        # logger.info(f"  - 更新时间: {best_price_result.get('updated_at')}")
     else:
         logger.warning(f"\n⚠️ 未找到可执行赔率:")
         logger.warning(f"  - 原因: {best_price_result.get('reason')}")
@@ -651,18 +651,18 @@ async def GetOdd(
     logger.info(f"\n{'='*60}")
     logger.info(f"📊 GetOdd 完成")
     logger.info(f"{'='*60}")
-    logger.info(f"  - Success: True")
-    logger.info(f"  - Handler: {handler_name}")
-    logger.info(f"  - Order ID: {order_id}")
+    # logger.info(f"  - Success: True")
+    # logger.info(f"  - Handler: {handler_name}")
+    # logger.info(f"  - Order ID: {order_id}")
     logger.info(f"  - Event: {event.get('home')} vs {event.get('away')}")
-    logger.info(f"  - Event Key: {event_key}")
-    logger.info(f"  - Betslip ID: {betslip_id}")
-    logger.info(f"  - Platform Odd: {best_price_result.get('price') if best_price_result.get('success') else 'N/A'}")
+    # logger.info(f"  - Event Key: {event_key}")
+    # logger.info(f"  - Betslip ID: {betslip_id}")
+    # logger.info(f"  - Platform Odd: {best_price_result.get('price') if best_price_result.get('success') else 'N/A'}")
     platform_max_stake = best_price_result.get('available', {}).get('amount') if best_price_result.get('success') and best_price_result.get('available') else 'N/A'
     logger.info(f"  - Platform Max Stake: {platform_max_stake}")
-    logger.info(f"  - Match Phase: {match_phase}")
-    logger.info(f"  - Remaining Seconds: {remaining_seconds}")
-    logger.info(f"{'='*60}\n")
+    # logger.info(f"  - Match Phase: {match_phase}")
+    # logger.info(f"  - Remaining Seconds: {remaining_seconds}")
+    # logger.info(f"{'='*60}\n")
 
     return {
         'success': True,
