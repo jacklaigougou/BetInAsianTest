@@ -7,7 +7,7 @@
  * @returns {string} UUID string
  */
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
@@ -124,7 +124,7 @@ async function placeOrder(orderData) {
                 'Content-Type': 'application/json',
                 'session': sessionId,
                 'x-molly-client-name': 'sonic',
-                'x-molly-client-version': '2.5.4'
+                'x-molly-client-version': '2.5.15'
             },
             body: JSON.stringify(postData),
             credentials: 'include'

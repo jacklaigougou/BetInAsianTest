@@ -10,7 +10,9 @@ from .operations import (
     GetBalance,
     GetOdd,
     BettingOrder,
+    MonitorOrderStatus,
     SupplementaryOrder,
+    CancelOrder,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,4 +60,6 @@ class BetInAsianAutomation(AutomationBase):
     GetBalance = GetBalance
     GetOdd = GetOdd
     BettingOrder = BettingOrder
+    MonitorOrderStatus = MonitorOrderStatus
     SupplementaryOrder = SupplementaryOrder
+    CancelOrder = CancelOrder

@@ -608,6 +608,7 @@ async def GetOdd(
 
         # 赔率信息
         'odds': best_price_result.get('price'),
+        'order_odds': best_price_result.get('price'),
         'max_stake': best_price_result.get('available', {}).get('amount') if best_price_result.get('available') else None,
         'bookie': best_price_result.get('bookie'),
 

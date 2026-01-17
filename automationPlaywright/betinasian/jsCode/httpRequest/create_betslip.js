@@ -77,7 +77,7 @@ async function createBetslip(betData) {
                 'Content-Type': 'application/json',
                 'session': sessionId,
                 'x-molly-client-name': 'sonic',
-                'x-molly-client-version': '2.5.4'
+                'x-molly-client-version': '2.5.15'
             },
             body: JSON.stringify(postData),
             credentials: 'include'

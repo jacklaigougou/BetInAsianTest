@@ -312,7 +312,7 @@ async def _handle_pending_acceptance(
     num = 0
     while num < 30:
         logger.info(f"[{handler_name}] 🔄 [轮询 {num+1}/30] 检查投注状态...")
-
+        
         # 遍历所有投注记录
         for bet in my_bets_response:
             if not isinstance(bet, list) or len(bet) < 12:
@@ -344,7 +344,7 @@ async def _handle_pending_acceptance(
                 # 2. 不是 PENDING，说明已经结算了
                 # 3. 只有在非 PENDING 状态下，验证是否有 reject
                 has_rejected = any('rejected' in str(value).lower() for value in bet)
-
+                
                 if has_rejected:
                     # 整个数组中发现 rejected，判定为失败
                     logger.error(f"[{handler_name}] ❌ 下注失败 - 数组中发现 'rejected'")

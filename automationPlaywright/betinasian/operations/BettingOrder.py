@@ -16,6 +16,8 @@ import asyncio
 from ..jsCodeExcutors.queries.pmm import get_price_by_betslip_id
 from ..jsCodeExcutors.http_executors import place_order, delete_betslip
 
+from configs.settings import Settings as settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,7 @@ async def BettingOrder(
     dispatch_message: Dict[str, Any],
     stake: float = 5,
     currency: str = "USD",
-    duration: int = 10,
+    duration: int = settings.BETINASIAN_DURATION,
     required_amount: float = 10.0,
     required_currency: str = "GBP",  # 修改为 GBP，与 GetOdd 保持一致
     wait_for_order: bool = True,
@@ -118,6 +120,7 @@ async def BettingOrder(
 
         # bet_data = dispatch_message.get('bet_data', {})
         order_id = dispatch_message.get('order_id', '')
+        
         # betting_amount = dispatch_message.get('betting_amount', 0)
         
         # print(f'下单的dispatch_message : {dispatch_message}')
@@ -186,42 +189,44 @@ async def BettingOrder(
        
         
 
-        best_price_result = await get_price_by_betslip_id(
-            page=self.page,
-            betslip_id=betslip_id,
-            required_amount=required_amount,
-            required_currency=required_currency
-        )
+        # best_price_result = await get_price_by_betslip_id(
+        #     page=self.page,
+        #     betslip_id=betslip_id,
+        #     required_amount=required_amount,
+        #     required_currency=required_currency
+        # )
 
-        if not best_price_result.get('success'):
-            logger.error(f"❌ 获取价格失败: {best_price_result.get('reason')}")
-            return {
-                'success': False,
-                'message': f"获取价格失败: {best_price_result.get('reason')}",
-                'betslip_id': betslip_id,
-                'order_id': order_id
-            }
+        # if not best_price_result.get('success'):
+        #     logger.error(f"❌ 获取价格失败: {best_price_result.get('reason')}")
+        #     return {
+        #         'success': False,
+        #         'message': f"获取价格失败: {best_price_result.get('reason')}",
+        #         'betslip_id': betslip_id,
+        #         'order_id': order_id
+        #     }
 
-        best_price = best_price_result.get('price')
-        best_bookie = best_price_result.get('bookie')
-        available = best_price_result.get('available')
+        # best_price = best_price_result.get('price')
+        # best_bookie = best_price_result.get('bookie')
+        # available = best_price_result.get('available')
 
-        logger.info(f"✅ 获取最新价格成功:")
-        logger.info(f"  - Price: {best_price}")
-        logger.info(f"  - Bookie: {best_bookie}")
-        logger.info(f"  - Available: {available}")
+        # logger.info(f"✅ 获取最新价格成功:")
+        # logger.info(f"  - Price: {best_price}")
+        # logger.info(f"  - Bookie: {best_bookie}")
+        # logger.info(f"  - Available: {available}")
 
-        if not best_price or best_price <= 0:
-            logger.error(f"❌ 价格无效: {best_price}")
-            return {
-                'success': False,
-                'message': f'价格无效: {best_price}',
-                'betslip_id': betslip_id,
-                'price': best_price,
-                'order_id': order_id
-            }
+        # if not best_price or best_price <= 0:
+        #     logger.error(f"❌ 价格无效: {best_price}")
+        #     return {
+        #         'success': False,
+        #         'message': f'价格无效: {best_price}',
+        #         'betslip_id': betslip_id,
+        #         'price': best_price,
+        #         'order_id': order_id
+        #     }
 
         # ========== Step 3: 提交订单 ==========
+        best_price = cached_data.get('order_odds')
+        best_bookie = cached_data.get('bookie')
         logger.info("\n📤 Step 3: 提交订单...")
         logger.info(f"  - Price: {best_price} (来自 {best_bookie})")
         logger.info(f"  - Stake: {stake} {currency}")

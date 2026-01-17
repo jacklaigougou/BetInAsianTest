@@ -102,8 +102,8 @@ def _analyze_football_time(match_phase, elapsed):
     # 确定比赛阶段
     phase_lower = match_phase.lower()
 
-    if 'first' in phase_lower or phase_lower == '1h':
-        # 上半场
+    if 'first' in phase_lower or phase_lower == '1h' or 'halftime' in phase_lower:
+        # 上半场（包括中场休息）
         period_remaining = max(0, HALF_DURATION - elapsed_seconds)
         total_remaining = period_remaining + HALF_DURATION  # 上半场剩余 + 下半场全部
         phase_name = "FirstHalf"

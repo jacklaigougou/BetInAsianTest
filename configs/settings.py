@@ -26,8 +26,9 @@ class Settings:
     _AUTOMATION_DIR = os.path.join(_BASE_DIR, "automationPlaywright")
     
     
-    
-    
+    # betinasian 的 duration 时间设置
+    BETINASIAN_DURATION = 120
+     
     PLATFORM_INFO = {
         'betinasian':{
             'platform_name': 'betinasian',

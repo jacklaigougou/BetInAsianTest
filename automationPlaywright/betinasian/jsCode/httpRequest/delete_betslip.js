@@ -35,6 +35,12 @@ async function deleteBetslip(betslipId) {
             url: url
         });
 
+        // Prepare request body
+        const requestBody = {
+            data: null,
+            status: "ok"
+        };
+
         // Use fetch API with required headers
         const response = await fetch(url, {
             method: 'DELETE',
@@ -42,12 +48,14 @@ async function deleteBetslip(betslipId) {
                 'Accept': 'application/json, text/plain, */*',
                 'Accept-Encoding': 'gzip, deflate, br, zstd',
                 'Accept-Language': 'en-US,en;q=0.9',
+                'Content-Type': 'application/json',
                 'Origin': 'https://black.betinasia.com',
                 'Referer': 'https://black.betinasia.com/sportsbook',
                 'session': sessionId,
                 'x-molly-client-name': 'sonic',
-                'x-molly-client-version': '2.5.9'
+                'x-molly-client-version': '2.5.15'
             },
+            body: JSON.stringify(requestBody),
             credentials: 'include'
         });
 
