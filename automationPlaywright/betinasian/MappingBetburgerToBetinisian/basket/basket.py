@@ -162,9 +162,19 @@ def parse_spider_market(spider_market_id: str, handicap_value: float = None):
 
     # Convert handicap value to line_id if needed
     if mapping.get("has_line") and handicap_value is not None:
+        # BetInAsian 的 line_id 表示 home 的让分值
+        # 如果 side = away，需要反转符号（因为 away 的值是 home 的相反数）
+        if spider_market_id in ["17", "18"]:
+            betinasian_side = mapping.get("betinasian_side")
+            if betinasian_side == "a":  # away 需要反转
+                handicap_value = -float(handicap_value)
+            else:
+                handicap_value = float(handicap_value)
+        else:
+            handicap_value = float(handicap_value)
         # Convert to integer (BetInAsian line_id format)
         # e.g., -5.5 -> -22, 170 -> 680, 165.5 -> 662
-        mapping["line_id"] = int(float(handicap_value) * 4)
+        mapping["line_id"] = int(handicap_value * 4)
 
     # Remove internal flag
     mapping.pop("has_line", None)

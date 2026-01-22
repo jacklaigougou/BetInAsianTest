@@ -323,6 +323,12 @@ def parse_spider_market(spider_market_id: str, handicap_value: float = None):
 
     # Convert handicap value to line_id if needed
     if mapping.get("has_line") and handicap_value is not None:
+        # BetInAsian 的 line_id 表示 home 的让分值
+        # 如果 side = away，需要反转符号（因为 away 的值是 home 的相反数）
+        if spider_market_id in ["17", "18", "49", "50"]:
+            betinasian_side = mapping.get("betinasian_side")
+            if betinasian_side == "a":  # away 需要反转
+                handicap_value = -handicap_value
         # Convert to integer (BetInAsian line_id format)
         # Soccer uses 0.25 increments, multiply by 4
         # e.g., -0.5 -> -2, 2.5 -> 10, 1.75 -> 7
